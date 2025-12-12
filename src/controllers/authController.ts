@@ -1,0 +1,281 @@
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import slugify from 'slugify';
+import crypto from 'crypto';
+import nodemailer from 'nodemailer';
+
+const prisma = new PrismaClient();
+
+// Configurar transporte de email
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+// ==========================
+// REGISTER
+// ==========================
+export const register = async (req: Request, res: Response) => {
+  const {
+    email,
+    password,
+    fullName,
+    phone,
+    salonName,
+    salonAddress,
+    salonPhone,
+    config,
+  } = req.body;
+
+  try {
+    // 1️⃣ Verificar si el usuario ya existe
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'El email ya está registrado' });
+    }
+
+    // 2️⃣ Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 3️⃣ Crear el usuario ADMIN
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name: fullName,
+        phone: phone || null,
+        role: 'ADMIN',
+      },
+    });
+
+    const slug = slugify(salonName, { lower: true, strict: true });
+
+    // 4️⃣ Crear el salón asociado al usuario
+    const salon = await prisma.salon.create({
+      data: {
+        name: salonName,
+        address: salonAddress || null,
+        phone: salonPhone || null,
+        adminId: user.id,
+        slug,
+      },
+    });
+
+    // 5️⃣ Crear configuración del salón si se proporciona
+    if (config) {
+      await prisma.config.create({
+        data: {
+          salonId: salon.id,
+          requireConfirmation: config.requireConfirmation || false,
+          workersCanCreateServices: config.workersCanCreateServices || false,
+          canAcceptAppointments:
+            config.canAcceptAppointments !== undefined
+              ? config.canAcceptAppointments
+              : true,
+          canModifyAppointments: config.canModifyAppointments || false,
+        },
+      });
+    }
+
+    // 6️⃣ Crear token JWT
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET || 'your_jwt_secret',
+      { expiresIn: '1h' }
+    );
+
+    // 7️⃣ Devolver respuesta con usuario + salón
+    res.status(201).json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        phone: user.phone,
+        salon: {
+          id: salon.id,
+          name: salon.name,
+          slug: salon.slug,
+          address: salon.address,
+          phone: salon.phone,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('💥 Error al registrar usuario:', error);
+    res
+      .status(500)
+      .json({ error: 'Error en el servidor', details: error.message });
+  }
+};
+
+// ==========================
+// LOGIN
+// ==========================
+export const login = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  try {
+    // 1️⃣ Buscar usuario por email e incluir el salón si existe
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { salon: true, worksAt: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // 2️⃣ Validar contraseña
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // 3️⃣ Generar token JWT
+    console.log('🔑 Creando token para userId:', user.id, 'role:', user.role);
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET || 'your_jwt_secret',
+      { expiresIn: '1h' }
+    );
+    console.log('✅ Token creado exitosamente');
+
+    // 4️⃣ Devolver datos de usuario + token + permisos
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        salon: user.salon || user.worksAt || null,
+        permissions: {
+          canViewClients: user.canViewClients,
+          canEditClients: user.canEditClients,
+          canDeleteClients: user.canDeleteClients,
+          canViewPersonal: user.canViewPersonal,
+          canEditPersonal: user.canEditPersonal,
+          canDeletePersonal: user.canDeletePersonal,
+          canViewServices: user.canViewServices,
+          canEditServices: user.canEditServices,
+          canDeleteServices: user.canDeleteServices,
+          canViewInventory: user.canViewInventory,
+          canEditInventory: user.canEditInventory,
+          canDeleteInventory: user.canDeleteInventory,
+          canViewReports: user.canViewReports,
+          canViewMarketing: user.canViewMarketing,
+          canConfirmAppointments: user.canConfirmAppointments,
+          canCancelAppointments: user.canCancelAppointments,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('💥 Error al iniciar sesión:', error);
+    res
+      .status(500)
+      .json({ error: 'Error en el servidor', details: error.message });
+  }
+};
+
+// ==========================
+// FORGOT PASSWORD
+// ==========================
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  try {
+    // 1️⃣ Buscar usuario por email
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // No revelar si el email existe o no por seguridad
+    if (!user) {
+      return res.json({ message: 'Si el email existe, recibirás un correo de restablecimiento' });
+    }
+
+    // 2️⃣ Generar token de restablecimiento (válido por 1 hora)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hora
+
+    // 3️⃣ Guardar token en base de datos
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken,
+        resetTokenExpiry,
+      },
+    });
+
+    // 4️⃣ Enviar email con enlace de restablecimiento
+    const resetUrl = `http://localhost:8080/reset-password?token=${resetToken}`;
+    
+    await transporter.sendMail({
+      from: `"Horarios" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Restablecer tu contraseña',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #9333ea;">Restablecer tu contraseña</h2>
+          <p>Has solicitado restablecer tu contraseña. Haz clic en el botón de abajo para continuar:</p>
+          <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #9333ea; color: white; text-decoration: none; border-radius: 8px; margin: 20px 0;">
+            Restablecer contraseña
+          </a>
+          <p>O copia y pega este enlace en tu navegador:</p>
+          <p style="color: #6b7280; word-break: break-all;">${resetUrl}</p>
+          <p style="color: #ef4444; margin-top: 20px;"><strong>Este enlace expirará en 1 hora.</strong></p>
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">Si no solicitaste este cambio, puedes ignorar este correo.</p>
+        </div>
+      `,
+    });
+
+    res.json({ message: 'Si el email existe, recibirás un correo de restablecimiento' });
+  } catch (error: any) {
+    console.error('💥 Error al solicitar restablecimiento:', error);
+    res.status(500).json({ error: 'Error al procesar la solicitud' });
+  }
+};
+
+// ==========================
+// RESET PASSWORD
+// ==========================
+export const resetPassword = async (req: Request, res: Response) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    // 1️⃣ Buscar usuario con el token válido
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Token inválido o expirado' });
+    }
+
+    // 2️⃣ Hashear nueva contraseña
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 3️⃣ Actualizar contraseña y limpiar token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+
+    res.json({ message: 'Contraseña actualizada exitosamente' });
+  } catch (error: any) {
+    console.error('💥 Error al restablecer contraseña:', error);
+    res.status(500).json({ error: 'Error al restablecer la contraseña' });
+  }
+};

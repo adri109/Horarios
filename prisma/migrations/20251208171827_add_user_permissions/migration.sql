@@ -1,0 +1,17 @@
+-- AlterTable
+ALTER TABLE "public"."User" ADD COLUMN     "canCancelAppointments" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canConfirmAppointments" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canDeleteClients" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canDeleteInventory" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canDeletePersonal" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canDeleteServices" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canEditClients" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canEditInventory" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canEditPersonal" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canEditServices" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canViewClients" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "canViewInventory" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canViewMarketing" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canViewPersonal" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canViewReports" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "canViewServices" BOOLEAN NOT NULL DEFAULT true;
