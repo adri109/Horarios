@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import axios from '@/utils/axios';
 import { useRouter } from 'vue-router';
 
 const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';

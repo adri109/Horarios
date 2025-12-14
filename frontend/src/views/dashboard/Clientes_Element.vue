@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
+import axios from '@/utils/axios';
 import { usePermissions } from '../../composables/usePermissions';
 
 // Verificar permisos

@@ -499,7 +499,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
+import axios from '@/utils/axios';
 
 const route = useRoute();
 const slug = route.params.slug;
