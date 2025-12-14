@@ -34,12 +34,21 @@ if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
 
 // CORS configuración
 const allowedOrigins = process.env.FRONTEND_URL 
-  ? [process.env.FRONTEND_URL, 'http://localhost:8080', 'http://localhost:3000']
+  ? [
+      process.env.FRONTEND_URL,
+      'http://localhost:8080',
+      'http://localhost:3000',
+      'https://horariosv2-mizto6ixm-adri109s-projects.vercel.app', // Dominio de preview Vercel
+    ]
   : ['http://localhost:8080', 'http://localhost:3000'];
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
+  
+  // Permitir cualquier subdominio de vercel.app
+  const isVercelApp = origin && origin.match(/https:\/\/.*\.vercel\.app$/);
+  
+  if (origin && (allowedOrigins.includes(origin) || isVercelApp)) {
     res.header('Access-Control-Allow-Origin', origin);
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');

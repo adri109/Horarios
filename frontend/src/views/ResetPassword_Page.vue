@@ -159,7 +159,7 @@ const handleResetPassword = async () => {
 
     success.value = true;
   } catch (err) {
-    if (axios.isAxiosError(err)) {
+    if (err.response) {
       error.value = err.response?.data?.error || 'Error al restablecer la contraseña';
     } else {
       error.value = 'Error al restablecer la contraseña';

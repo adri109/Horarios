@@ -503,7 +503,7 @@ async function handleSubmit() {
     router.push('/dashboard');
   } catch (err) {
     console.error('❌ Error completo:', err);
-    if (axios.isAxiosError(err)) {
+    if (err.response) {
       const errorMessage =
         err.response?.data?.error ||
         err.response?.data?.details ||

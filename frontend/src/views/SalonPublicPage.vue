@@ -637,7 +637,7 @@ async function confirmAppointment() {
 
   } catch (err) {
     console.error('❌ Error creando cita:', err);
-    if (axios.isAxiosError(err)) {
+    if (err.response) {
       alert(err.response?.data?.error || 'Error al crear la cita');
     } else {
       alert('Error al crear la cita');
@@ -658,7 +658,7 @@ const fetchSalon = async () => {
     services.value = data.services || [];
   } catch (err) {
     console.error('❌ Error cargando el salón:', err);
-    if (axios.isAxiosError(err)) {
+    if (err.response) {
       console.error('❌ Respuesta del servidor:', err.response?.data);
     }
     salon.value = null;
@@ -734,7 +734,7 @@ watch(selectedDate, async (newDate) => {
     scheduleData.value = data.schedules || null;
   } catch (err) {
     console.error('❌ Error cargando slots:', err);
-    if (axios.isAxiosError(err)) {
+    if (err.response) {
       console.error('❌ Respuesta del servidor:', err.response?.data);
     }
     displaySlots.value = [];

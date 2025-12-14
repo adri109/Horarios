@@ -206,7 +206,7 @@ const fetchServices = async () => {
     services.value = res.data || [];
   } catch (error) {
     console.error('❌ Error cargando servicios:', error);
-    if (axios.isAxiosError(error)) {
+    if (error.response) {
       console.error('❌ Respuesta del servidor:', error.response?.data);
     }
     alert('No se pudieron cargar los servicios');
@@ -264,7 +264,7 @@ const saveService = async () => {
     closeModal();
   } catch (error) {
     console.error('❌ Error guardando el servicio:', error);
-    if (axios.isAxiosError(error)) {
+    if (error.response) {
       console.error('❌ Respuesta del servidor:', error.response?.data);
     }
     alert('Error guardando el servicio');
@@ -293,7 +293,7 @@ const deleteService = async (id) => {
     console.log('✅ Servicio eliminado');
   } catch (error) {
     console.error('❌ Error eliminando servicio:', error);
-    if (axios.isAxiosError(error)) {
+    if (error.response) {
       console.error('❌ Respuesta del servidor:', error.response?.data);
     }
     alert('Error eliminando el servicio');

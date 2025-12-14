@@ -356,11 +356,11 @@ const handleLogin = async () => {
   } catch (err) {
     console.error('❌ Error en login:', err);
     // Manejo de errores con axios
-    if (axios.isAxiosError(err)) {
+    if (err.response) {
       error.value = err.response?.data?.error || 'Error en el login';
       console.error('❌ Error del servidor:', err.response?.data);
     } else {
-      error.value = 'Error en el login';
+      error.value = 'Error de conexión con el servidor';
     }
   } finally {
     loading.value = false;
@@ -383,7 +383,7 @@ const handleForgotPassword = async () => {
       closeForgotPassword();
     }, 3000);
   } catch (err) {
-    if (axios.isAxiosError(err)) {
+    if (err.response) {
       resetError.value = err.response?.data?.error || 'Error al enviar el correo';
     } else {
       resetError.value = 'Error al enviar el correo';
