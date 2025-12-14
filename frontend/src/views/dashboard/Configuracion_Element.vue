@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 const router = useRouter();
 
 // Solo admin puede acceder a configuración

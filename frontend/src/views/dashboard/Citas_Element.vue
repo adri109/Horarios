@@ -367,7 +367,7 @@
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 
 const loading = ref(true);
 const citas = ref([]);
