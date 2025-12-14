@@ -3,8 +3,23 @@
     <!-- Header decorativo -->
     <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-6 shadow-lg">
       <div class="max-w-6xl mx-auto px-4">
-        <h1 class="text-4xl md:text-5xl font-bold mb-2">BeautySalon</h1>
-        <p class="text-purple-100">Reserva tu cita online</p>
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-4xl md:text-5xl font-bold mb-2">BeautySalon</h1>
+            <p class="text-purple-100">Reserva tu cita online</p>
+          </div>
+          <!-- Botón de acceso al dashboard si está autenticado -->
+          <router-link
+            v-if="isAuthenticated"
+            to="/dashboard/resume"
+            class="bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-purple-50 transition-all flex items-center gap-2 shadow-lg"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+            </svg>
+            Ir al Dashboard
+          </router-link>
+        </div>
       </div>
     </div>
 
@@ -66,33 +81,60 @@
             <p class="text-gray-500 text-lg">Este salón aún no tiene servicios disponibles</p>
           </div>
           
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <button
               v-for="service in services"
               :key="service.id"
               @click="selectService(service)"
               :class="[
-                'group relative p-6 border-2 rounded-2xl transition-all duration-300 text-left',
+                'group relative p-4 border-2 rounded-xl transition-all duration-300 text-left',
                 selectedService?.id === service.id
                   ? 'border-purple-600 bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl scale-105'
-                  : 'border-purple-200 hover:border-purple-400 hover:shadow-lg bg-gradient-to-br from-white to-purple-50'
+                  : 'border-purple-200 hover:border-purple-400 hover:shadow-lg bg-white'
               ]"
             >
-              <div class="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                {{ service.duration }} min
+              <!-- Icono de servicio -->
+              <div class="flex items-start gap-3 mb-3">
+                <div :class="[
+                  'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
+                  selectedService?.id === service.id 
+                    ? 'bg-gradient-to-br from-purple-600 to-pink-600' 
+                    : 'bg-gradient-to-br from-purple-100 to-pink-100'
+                ]">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" :stroke="selectedService?.id === service.id ? 'white' : '#9333ea'" class="w-7 h-7">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-bold text-lg text-gray-800 mb-1 leading-tight">
+                    {{ service.name }}
+                  </h3>
+                  <p class="text-gray-600 text-sm line-clamp-2">{{ service.description || 'Servicio profesional' }}</p>
+                </div>
               </div>
-              <div v-if="selectedService?.id === service.id" class="absolute top-4 left-4 bg-green-500 text-white rounded-full p-1">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+
+              <!-- Info del servicio -->
+              <div class="flex items-center justify-between pt-3 border-t border-purple-100">
+                <div class="flex items-center gap-1 text-purple-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="font-bold text-lg">€{{ service.price }}</span>
+                </div>
+                <div class="flex items-center gap-1 text-gray-600 text-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="font-semibold">{{ service.duration }} min</span>
+                </div>
+              </div>
+
+              <!-- Checkmark si está seleccionado -->
+              <div v-if="selectedService?.id === service.id" class="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1.5 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
               </div>
-              <h3 class="font-bold text-xl text-gray-800 mb-2 pr-20">
-                {{ service.name }}
-              </h3>
-              <p class="text-gray-600 mb-4 text-sm">{{ service.description }}</p>
-              <p class="font-bold text-2xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                €{{ service.price }}
-              </p>
             </button>
           </div>
         </div>
@@ -108,7 +150,11 @@
 
           <!-- Mensaje: selecciona servicio primero -->
           <div v-if="!selectedService" class="text-center py-10">
-            <div class="text-6xl mb-4">👆</div>
+            <div class="flex justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-20 h-20 text-purple-400">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+              </svg>
+            </div>
             <p class="text-gray-600 text-lg font-medium">Primero selecciona un servicio arriba</p>
           </div>
 
@@ -122,8 +168,11 @@
 
             <!-- Selector de fecha rediseñado -->
             <div class="mb-8">
-              <label class="block text-lg font-semibold text-gray-700 mb-4">
-                📅 Selecciona tu fecha preferida
+              <label class="block text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-purple-600">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+                Selecciona la fecha
               </label>
               <div class="relative">
                 <input
@@ -131,11 +180,12 @@
                   id="reservation-date"
                   v-model="selectedDate"
                   :min="new Date().toISOString().split('T')[0]"
-                  class="w-full p-5 pl-14 border-2 border-purple-300 rounded-2xl shadow-md focus:ring-4 focus:ring-purple-200 focus:border-purple-500 text-lg font-semibold transition-all bg-gradient-to-r from-white to-purple-50 cursor-pointer hover:shadow-lg"
+                  class="w-full p-4 pl-14 pr-4 border-2 border-purple-300 rounded-xl shadow-sm focus:ring-4 focus:ring-purple-200 focus:border-purple-500 text-base font-medium transition-all bg-white cursor-pointer hover:border-purple-400 hover:shadow-md"
+                  style="color-scheme: light;"
                 />
-                <div class="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-purple-600">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                   </svg>
                 </div>
               </div>
@@ -149,22 +199,25 @@
 
             <!-- Horarios disponibles rediseñados -->
             <div v-else-if="allSlots.length > 0">
-              <div class="mb-6 flex items-center justify-between">
+              <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
                 <label class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                  <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-purple-600">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Elige tu hora
                 </label>
                 <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-xs text-green-700 bg-green-50 px-2 py-1 rounded-full font-semibold">
-                    ✓ {{ displaySlots.length }} libres
+                  <span class="text-xs text-green-700 bg-green-50 px-3 py-1 rounded-full font-semibold border border-green-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3 inline mr-1">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    {{ displaySlots.length }} libres
                   </span>
-                  <span v-if="allSlots.filter(s => s.occupied).length > 0" class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                    ✗ {{ allSlots.filter(s => s.occupied).length }} ocupadas
-                  </span>
-                  <span v-if="allSlots.filter(s => s.passed).length > 0" class="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
-                    ⏰ {{ allSlots.filter(s => s.passed).length }} pasadas
+                  <span v-if="allSlots.filter(s => s.occupied).length > 0" class="text-xs text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3 inline mr-1">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    {{ allSlots.filter(s => s.occupied).length }} ocupadas
                   </span>
                 </div>
               </div>
@@ -175,62 +228,62 @@
                 :key="index"
                 class="mb-6 last:mb-0"
               >
-                <div class="flex items-center gap-3 mb-3">
+                <div class="flex items-center gap-3 mb-4">
                   <div class="h-px flex-1 bg-gradient-to-r from-transparent via-purple-300 to-transparent"></div>
-                  <h3 class="text-sm font-bold text-purple-700 uppercase tracking-wide px-3 py-1 bg-purple-50 rounded-full">
+                  <h3 class="text-sm font-bold text-purple-700 uppercase tracking-wide px-4 py-1.5 bg-purple-50 rounded-full border border-purple-200">
                     {{ group.name }}
                   </h3>
                   <div class="h-px flex-1 bg-gradient-to-r from-purple-300 via-transparent to-transparent"></div>
                 </div>
                 
-                <div v-if="group.opening && group.closing" class="text-center mb-3">
-                  <span class="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                <div v-if="group.opening && group.closing" class="text-center mb-4">
+                  <span class="text-xs text-gray-600 bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
                     {{ group.opening }} - {{ group.closing }}
                   </span>
                 </div>
                 
-                <div class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                   <button
                     v-for="slot in group.slots"
                     :key="slot.time"
                     @click="slot.available ? selectSlot(slot.time) : null"
                     :disabled="slot.occupied || slot.passed"
                     :class="[
-                      'relative p-4 rounded-xl font-bold text-base transition-all duration-300',
+                      'relative py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200',
                       slot.time === selectedSlot
-                        ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-pink-600 text-white shadow-2xl scale-110 ring-4 ring-purple-300'
+                        ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg scale-105 ring-2 ring-purple-400'
                         : slot.passed
-                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed opacity-50 border-2 border-gray-100 line-through'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                         : slot.occupied
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60 border-2 border-gray-200'
-                        : 'bg-gradient-to-br from-white to-purple-50 text-purple-700 hover:from-purple-100 hover:to-pink-100 hover:scale-105 shadow-md hover:shadow-xl border-2 border-purple-200 hover:border-purple-400 cursor-pointer',
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed opacity-70 border border-gray-300'
+                        : 'bg-white text-purple-700 hover:bg-purple-50 hover:scale-102 hover:shadow-md border-2 border-purple-200 hover:border-purple-400 cursor-pointer',
                     ]"
                   >
-                    <span class="relative z-10">{{ slot.time }}</span>
-                    <div 
-                      v-if="slot.time === selectedSlot"
-                      class="absolute top-1 right-1 bg-white rounded-full p-0.5"
-                    >
-                      <svg class="w-3 h-3 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    <span class="flex items-center justify-center gap-1.5">
+                      {{ slot.time }}
+                      <svg 
+                        v-if="slot.time === selectedSlot"
+                        xmlns="http://www.w3.org/2000/svg" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke-width="3" 
+                        stroke="currentColor" 
+                        class="w-4 h-4"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                       </svg>
-                    </div>
-                    <div 
-                      v-if="slot.passed"
-                      class="absolute top-1 right-1 text-gray-300"
-                    >
-                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                      <svg 
+                        v-else-if="slot.occupied"
+                        xmlns="http://www.w3.org/2000/svg" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke-width="2.5" 
+                        stroke="currentColor" 
+                        class="w-3.5 h-3.5"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                    </div>
-                    <div 
-                      v-else-if="slot.occupied"
-                      class="absolute top-1 right-1 text-gray-400"
-                    >
-                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path>
-                      </svg>
-                    </div>
+                    </span>
                   </button>
                 </div>
               </div>
@@ -239,15 +292,33 @@
               <div v-if="selectedSlot" class="mt-8 space-y-4">
                 <!-- Mensaje de éxito -->
                 <div v-if="appointmentSuccess" class="p-6 bg-green-50 border-2 border-green-500 rounded-xl text-center">
-                  <div class="text-6xl mb-4">✅</div>
+                  <div class="flex justify-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-20 h-20 text-green-600">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
                   <h3 class="text-2xl font-bold text-green-800 mb-2">¡Reserva Confirmada!</h3>
-                  <p class="text-green-700 mb-2">Hemos recibido tu reserva correctamente</p>
-                  <div class="bg-white rounded-lg p-3 mt-4">
-                    <p class="text-sm text-gray-700">
-                      📧 Te hemos enviado un email de confirmación con todos los detalles
+                  <p class="text-green-700 mb-2">{{ isAuthenticated ? 'Cita registrada en el sistema' : 'Hemos recibido tu reserva correctamente' }}</p>
+                  <div v-if="!isAuthenticated" class="bg-white rounded-lg p-3 mt-4 space-y-2">
+                    <p class="text-sm text-gray-700 flex items-center justify-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-green-600">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                      </svg>
+                      Te hemos enviado un email de confirmación con todos los detalles
                     </p>
-                    <p class="text-sm text-gray-700 mt-1" v-if="clientPhone">
-                      📱 También recibirás un SMS de recordatorio
+                    <p class="text-sm text-gray-700 flex items-center justify-center gap-2" v-if="clientPhone">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-green-600">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                      </svg>
+                      También recibirás un SMS de recordatorio
+                    </p>
+                  </div>
+                  <div v-else class="bg-white rounded-lg p-3 mt-4">
+                    <p class="text-sm text-gray-700 flex items-center justify-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-purple-600">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      La cita ha sido añadida al sistema sin notificaciones
                     </p>
                   </div>
                 </div>
@@ -273,16 +344,34 @@
                   <!-- Formulario de datos del cliente -->
                   <div v-if="!showClientForm">
                     <button
-                      @click="openClientForm"
-                      class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                      @click="isAuthenticated ? confirmAppointment() : openClientForm()"
+                      :disabled="savingAppointment"
+                      class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                      ✅ Confirmar Reserva
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {{ savingAppointment ? 'Confirmando...' : 'Confirmar Reserva' }}
                     </button>
                   </div>
 
                   <div v-else class="space-y-4">
-                    <h4 class="font-semibold text-gray-800 text-center mb-2">📝 Completa tus datos</h4>
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <!-- Mensaje para usuarios autenticados -->
+                    <div v-if="isAuthenticated" class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 mb-4">
+                      <div class="flex items-center justify-center gap-2 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-green-600">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                        </svg>
+                        <p class="text-green-800 font-bold">¡Sesión iniciada!</p>
+                      </div>
+                      <p class="text-sm text-green-700 text-center">
+                        Tus datos han sido autocompletados. Puedes confirmar directamente.
+                      </p>
+                    </div>
+
+                    <h4 v-else class="font-semibold text-gray-800 text-center mb-2">📝 Completa tus datos</h4>
+                    
+                    <div v-if="!isAuthenticated" class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                       <p class="text-xs text-blue-800 text-center">
                         💌 Recibirás un email/SMS de confirmación con los detalles de tu cita
                       </p>
@@ -296,7 +385,13 @@
                         id="client-name"
                         placeholder=" "
                         required
-                        class="peer w-full px-4 py-3 border-2 border-purple-300 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all"
+                        :readonly="isAuthenticated"
+                        :class="[
+                          'peer w-full px-4 py-3 border-2 rounded-xl outline-none transition-all',
+                          isAuthenticated 
+                            ? 'bg-gray-50 border-gray-300 text-gray-700 cursor-not-allowed' 
+                            : 'border-purple-300 focus:ring-4 focus:ring-purple-200 focus:border-purple-500'
+                        ]"
                       />
                       <label
                         for="client-name"
@@ -313,7 +408,13 @@
                         type="tel"
                         id="client-phone"
                         placeholder=" "
-                        class="peer w-full px-4 py-3 border-2 border-purple-300 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all"
+                        :readonly="isAuthenticated"
+                        :class="[
+                          'peer w-full px-4 py-3 border-2 rounded-xl outline-none transition-all',
+                          isAuthenticated 
+                            ? 'bg-gray-50 border-gray-300 text-gray-700 cursor-not-allowed' 
+                            : 'border-purple-300 focus:ring-4 focus:ring-purple-200 focus:border-purple-500'
+                        ]"
                       />
                       <label
                         for="client-phone"
@@ -330,7 +431,13 @@
                         type="email"
                         id="client-email"
                         placeholder=" "
-                        class="peer w-full px-4 py-3 border-2 border-purple-300 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all"
+                        :readonly="isAuthenticated"
+                        :class="[
+                          'peer w-full px-4 py-3 border-2 rounded-xl outline-none transition-all',
+                          isAuthenticated 
+                            ? 'bg-gray-50 border-gray-300 text-gray-700 cursor-not-allowed' 
+                            : 'border-purple-300 focus:ring-4 focus:ring-purple-200 focus:border-purple-500'
+                        ]"
                       />
                       <label
                         for="client-email"
@@ -365,13 +472,21 @@
             </div>
 
             <div v-else-if="selectedDate" class="text-center py-10">
-              <div class="text-6xl mb-4">😔</div>
+              <div class="flex justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-20 h-20 text-gray-400">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 16.318A4.486 4.486 0 0012.016 15a4.486 4.486 0 00-3.198 1.318M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
+                </svg>
+              </div>
               <p class="text-gray-500 text-lg">No hay horarios disponibles para esta fecha</p>
               <p class="text-gray-400 text-sm mt-2">Prueba con otro día</p>
             </div>
 
             <div v-else class="text-center py-10">
-              <div class="text-6xl mb-4">📆</div>
+              <div class="flex justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-20 h-20 text-purple-400">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+                </svg>
+              </div>
               <p class="text-gray-500 text-lg">Selecciona una fecha para ver los horarios disponibles</p>
             </div>
           </div>
@@ -410,6 +525,33 @@ const clientEmail = ref('');
 const savingAppointment = ref(false);
 const appointmentSuccess = ref(false);
 
+// Detectar si el usuario está autenticado
+const authenticatedUser = ref(null);
+const isAuthenticated = ref(false);
+
+// Verificar autenticación al cargar
+const checkAuthentication = () => {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  
+  if (token && userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      authenticatedUser.value = user;
+      isAuthenticated.value = true;
+      
+      // Autocompletar datos si está autenticado
+      clientName.value = user.name || '';
+      clientEmail.value = user.email || '';
+      clientPhone.value = user.phone || '';
+      
+      console.log('✅ Usuario autenticado detectado:', user.email);
+    } catch (e) {
+      console.error('Error parseando usuario:', e);
+    }
+  }
+};
+
 function selectService(service) {
   selectedService.value = service;
   selectedDate.value = null;
@@ -430,13 +572,25 @@ function openClientForm() {
 
 function cancelClientForm() {
   showClientForm.value = false;
-  clientName.value = '';
-  clientPhone.value = '';
-  clientEmail.value = '';
+  // No limpiar datos si está autenticado
+  if (!isAuthenticated.value) {
+    clientName.value = '';
+    clientPhone.value = '';
+    clientEmail.value = '';
+  }
 }
 
 async function confirmAppointment() {
-  if (!clientName.value || (!clientPhone.value && !clientEmail.value)) {
+  // Si está autenticado, usar datos del usuario
+  if (isAuthenticated.value) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    clientName.value = user.name || '';
+    clientEmail.value = user.email || '';
+    clientPhone.value = user.phone || '';
+  }
+
+  // Validar solo si no está autenticado
+  if (!isAuthenticated.value && (!clientName.value || (!clientPhone.value && !clientEmail.value))) {
     alert('Por favor, completa tu nombre y al menos un método de contacto');
     return;
   }
@@ -448,29 +602,38 @@ async function confirmAppointment() {
     const startDateTime = new Date(selectedDate.value);
     startDateTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
 
+    const token = localStorage.getItem('token');
+    const config = token ? {
+      headers: { Authorization: `Bearer ${token}` }
+    } : {};
+
     const response = await axios.post(`/public/${slug}/appointments`, {
       clientName: clientName.value,
       clientPhone: clientPhone.value || null,
       clientEmail: clientEmail.value || null,
       serviceId: selectedService.value.id,
       startTime: startDateTime.toISOString(),
-    });
+      isStaffBooking: isAuthenticated.value, // Flag para indicar que es un trabajador
+    }, config);
 
     console.log('✅ Cita creada:', response.data);
     appointmentSuccess.value = true;
     
     // Limpiar formulario
+    const clearDelay = isAuthenticated.value ? 2000 : 3000;
     setTimeout(() => {
       selectedService.value = null;
       selectedDate.value = null;
       selectedSlot.value = null;
       displaySlots.value = [];
       showClientForm.value = false;
-      clientName.value = '';
-      clientPhone.value = '';
-      clientEmail.value = '';
+      if (!isAuthenticated.value) {
+        clientName.value = '';
+        clientPhone.value = '';
+        clientEmail.value = '';
+      }
       appointmentSuccess.value = false;
-    }, 3000);
+    }, clearDelay);
 
   } catch (err) {
     console.error('❌ Error creando cita:', err);
@@ -505,6 +668,7 @@ const fetchSalon = async () => {
 };
 
 onMounted(() => {
+  checkAuthentication(); // Verificar autenticación primero
   fetchSalon();
 });
 
@@ -582,6 +746,73 @@ watch(selectedDate, async (newDate) => {
 });
 </script>
 
-<style>
-/* Tailwind maneja todos los estilos */
+<style scoped>
+/* Estilos personalizados para el calendario desplegable */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* Estilizar el dropdown del calendario en navegadores Webkit/Chromium */
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-text {
+  color: #6b7280;
+  padding: 0 0.2em;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field:focus,
+input[type="date"]::-webkit-datetime-edit-day-field:focus,
+input[type="date"]::-webkit-datetime-edit-year-field:focus {
+  background-color: #f3e8ff;
+  color: #7c3aed;
+  outline: none;
+  border-radius: 0.25rem;
+}
+
+/* Estilos para el calendario desplegable (solo Chrome/Edge) */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background: transparent;
+  bottom: 0;
+  color: transparent;
+  cursor: pointer;
+  height: auto;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: auto;
+}
+
+/* Mejorar contraste cuando está enfocado */
+input[type="date"]:focus::-webkit-datetime-edit-month-field,
+input[type="date"]:focus::-webkit-datetime-edit-day-field,
+input[type="date"]:focus::-webkit-datetime-edit-year-field {
+  background-color: #f3e8ff;
+  color: #7c3aed;
+}
+
+/* Firefox - Estilos básicos */
+input[type="date"]::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
 </style>

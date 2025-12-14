@@ -1,8 +1,16 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
 
 const API_URL = 'http://localhost:3000';
+const router = useRouter();
+
+// Solo admin puede acceder a configuración
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+if (user.role !== 'ADMIN') {
+  router.push('/dashboard/resume');
+}
 
 const loading = ref(true);
 const saving = ref(false);
@@ -285,7 +293,13 @@ onMounted(() => {
 <template>
   <div class="config-container">
     <div class="header">
-      <h1 class="title">⚙️ Configuración</h1>
+      <h1 class="title">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Configuración
+      </h1>
       <p class="subtitle">Personaliza el funcionamiento de tu salón</p>
     </div>
 
@@ -299,9 +313,18 @@ onMounted(() => {
       <!-- CONFIGURACIÓN GENERAL -->
       <section class="config-section">
         <div class="section-header">
-          <h2>🎯 Configuración General</h2>
-          <button @click="saveConfig" :disabled="saving" class="btn-save">
-            {{ saving ? 'Guardando...' : '💾 Guardar' }}
+          <h2 class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Configuración General
+          </h2>
+          <button @click="saveConfig" :disabled="saving" class="btn-save flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+            </svg>
+            {{ saving ? 'Guardando...' : 'Guardar' }}
           </button>
         </div>
         
@@ -350,7 +373,12 @@ onMounted(() => {
       <!-- HORARIOS SEMANALES -->
       <section class="config-section">
         <div class="section-header">
-          <h2>📅 Horarios por Día de la Semana</h2>
+          <h2 class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+            </svg>
+            Horarios por Día de la Semana
+          </h2>
           <p class="subtitle-small">Configura horarios específicos para cada día. Puedes añadir turnos partidos.</p>
         </div>
         
@@ -426,9 +454,17 @@ onMounted(() => {
       <!-- BLOQUEOS DE FECHAS -->
       <section class="config-section">
         <div class="section-header">
-          <h2>🚫 Bloqueos de Fechas</h2>
-          <button @click="openBlockModal" class="btn-add">
-            ➕ Nuevo Bloqueo
+          <h2 class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            Bloqueos de Fechas
+          </h2>
+          <button @click="openBlockModal" class="btn-add flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Nuevo Bloqueo
           </button>
         </div>
         
@@ -440,12 +476,30 @@ onMounted(() => {
         <div v-else class="blocks-list">
           <div v-for="block in blocks" :key="block.id" class="block-item">
             <div class="block-info">
-              <div class="block-date">📅 {{ formatDate(block.date) }}</div>
-              <div class="block-time">🕐 {{ block.startTime }} - {{ block.endTime }}</div>
-              <div v-if="block.reason" class="block-reason">💬 {{ block.reason }}</div>
+              <div class="block-date flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+                {{ formatDate(block.date) }}
+              </div>
+              <div class="block-time flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {{ block.startTime }} - {{ block.endTime }}
+              </div>
+              <div v-if="block.reason" class="block-reason flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                </svg>
+                {{ block.reason }}
+              </div>
             </div>
-            <button @click="deleteBlock(block.id)" class="btn-delete">
-              🗑️ Eliminar
+            <button @click="deleteBlock(block.id)" class="btn-delete flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+              </svg>
+              Eliminar
             </button>
           </div>
         </div>
@@ -456,8 +510,17 @@ onMounted(() => {
     <div v-if="showBlockModal" class="modal-overlay" @click="showBlockModal = false">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h2>➕ Nuevo Bloqueo</h2>
-          <button @click="showBlockModal = false" class="close-btn">✕</button>
+          <h2 class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Nuevo Bloqueo
+          </h2>
+          <button @click="showBlockModal = false" class="close-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         
         <div class="modal-body">
@@ -515,6 +578,16 @@ onMounted(() => {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.title svg {
+  color: #667eea;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  flex-shrink: 0;
 }
 
 .subtitle {
@@ -577,6 +650,13 @@ onMounted(() => {
   font-weight: 700;
   color: #1e293b;
   margin: 0;
+}
+
+.section-header h2 svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #667eea;
+  flex-shrink: 0;
 }
 
 /* Configuración General */
@@ -652,6 +732,24 @@ onMounted(() => {
 }
 
 /* Botones */
+.btn-save,
+.btn-add,
+.btn-delete,
+.btn-create {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-save svg,
+.btn-add svg,
+.btn-delete svg,
+.btn-create svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
 .btn-save {
   padding: 0.75rem 1.5rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -826,7 +924,7 @@ onMounted(() => {
 /* Bloqueos */
 .btn-add {
   padding: 0.75rem 1.5rem;
-  background: #10b981;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -837,7 +935,7 @@ onMounted(() => {
 
 .btn-add:hover {
   transform: translateY(-2px);
-  background: #059669;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .empty-state {
@@ -876,6 +974,14 @@ onMounted(() => {
   font-weight: 700;
   color: #991b1b;
   font-size: 1rem;
+}
+
+.block-date svg,
+.block-time svg,
+.block-reason svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
 .block-time {
@@ -945,7 +1051,6 @@ onMounted(() => {
   background: transparent;
   border: none;
   color: white;
-  font-size: 1.5rem;
   cursor: pointer;
   padding: 0;
   width: 32px;
@@ -955,6 +1060,11 @@ onMounted(() => {
   justify-content: center;
   border-radius: 50%;
   transition: background 0.2s;
+}
+
+.close-btn svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .close-btn:hover {

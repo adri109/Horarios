@@ -1,0 +1,618 @@
+==========================================
+PREGUNTAS Y RESPUESTAS - FUNCIONAMIENTO LÓGICO
+Sistema de Gestión para Salones de Belleza
+==========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. ARQUITECTURA Y ESTRUCTURA GENERAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cuál es la arquitectura general de la aplicación?
+La aplicación sigue una arquitectura cliente-servidor con separación completa entre frontend y backend:
+- Backend: API REST desarrollada con Node.js, Express y TypeScript que expone endpoints HTTP para todas las operaciones.
+- Frontend: SPA (Single Page Application) con Vue.js 3 que consume la API mediante Axios.
+- Base de datos: PostgreSQL gestionada a través de Prisma ORM.
+- Comunicación: Las peticiones se realizan mediante HTTP con autenticación JWT en las cabeceras.
+
+¿Cómo se estructura el código del backend?
+El backend sigue una arquitectura modular organizada en capas:
+- /routes: Define los endpoints y asocia cada ruta con su controlador y middleware correspondiente.
+- /controllers: Contiene la lógica de negocio de cada módulo (citas, clientes, servicios, etc.).
+- /middleware: Gestiona autenticación (JWT), validación de permisos y manejo de errores.
+- /services: Servicios auxiliares como envío de emails y WhatsApp.
+- /prisma: Esquema de base de datos y migraciones versionadas.
+
+¿Cómo se estructura el código del frontend?
+El frontend está organizado por funcionalidad:
+- /views: Páginas principales (Login, Dashboard, Register, etc.).
+- /views/components: Componentes compartidos (Header, Sidebar).
+- /views/dashboard: Componentes específicos del panel administrativo (Citas, Clientes, Servicios, etc.).
+- /router: Configuración de rutas con Vue Router.
+- /assets: Estilos globales y recursos estáticos.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. SISTEMA DE AUTENTICACIÓN Y SEGURIDAD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo funciona el sistema de autenticación?
+El sistema utiliza JWT (JSON Web Tokens) para autenticación stateless:
+1. El usuario envía email y contraseña al endpoint POST /auth/login
+2. El backend valida las credenciales contra la BD (contraseña hasheada con bcrypt)
+3. Si son correctas, genera un token JWT firmado con JWT_SECRET que incluye: userId, role y tiempo de expiración (1 hora)
+4. El frontend guarda el token en localStorage
+5. Cada petición posterior incluye el token en el header: Authorization: Bearer {token}
+6. El middleware authenticateToken valida el token en cada petición protegida
+
+¿Cómo se gestionan los roles y permisos?
+El sistema implementa un control de acceso basado en roles (RBAC) con dos niveles:
+- Roles: ADMIN (administrador del salón) y WORKER (trabajador)
+- Permisos granulares: 16 campos booleanos por usuario (canViewClients, canEditServices, etc.)
+Flujo de validación:
+1. El middleware authenticateToken extrae userId y role del JWT
+2. El middleware checkPermission(permiso) verifica si el usuario puede realizar la acción
+3. Si es ADMIN, se permite automáticamente
+4. Si es WORKER, se consulta el campo específico en la BD (ej: canDeleteClients)
+5. Se devuelve 403 Forbidden si no tiene permiso
+Protección en frontend:
+- Composable usePermissions(permiso) verifica permisos al montar cada componente
+- Si el usuario no tiene permiso, se redirige automáticamente a /dashboard/resume
+- El Sidebar oculta pestañas según permisos (canViewClients, canViewPersonal, etc.)
+- Previene acceso directo escribiendo URL en barra de direcciones
+
+¿Cómo se protegen las contraseñas?
+Las contraseñas nunca se almacenan en texto plano:
+1. Al registrarse, la contraseña se hashea con bcrypt usando un salt de 10 rondas
+2. Solo el hash se guarda en la BD
+3. Al hacer login, se compara el hash guardado con el hash de la contraseña ingresada usando bcrypt.compare()
+4. Esto hace imposible recuperar la contraseña original, solo validarla
+
+¿Cómo funciona la recuperación de contraseña?
+Sistema de tokens temporales con expiración:
+1. Usuario solicita restablecimiento en POST /auth/forgot-password con su email
+2. Backend genera un token aleatorio único (crypto.randomBytes) y lo guarda en user.resetToken con fecha de expiración (1 hora)
+3. Se envía email con enlace: /reset-password/{token}
+4. Al acceder, usuario ingresa nueva contraseña
+5. Backend valida que el token exista y no haya expirado
+6. Se hashea la nueva contraseña y se elimina el resetToken
+7. Usuario debe hacer login nuevamente
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. SISTEMA MULTI-TENANT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Qué es el sistema multi-tenant y cómo funciona?
+Multi-tenant significa que múltiples salones pueden usar la misma aplicación con datos completamente aislados:
+- Cada salón tiene un registro en la tabla Salon con un adminId único
+- Todos los datos (clientes, citas, servicios, inventario) están vinculados a un salonId
+- Los ADMIN tienen su propio salón (relación salon)
+- Los WORKER están asociados a un salón (relación worksAt con salonId)
+Aislamiento de datos:
+- Cada consulta incluye automáticamente un filtro WHERE salonId = {salon_del_usuario}
+- Un salón NUNCA puede ver datos de otro salón
+- Cada salón tiene su propia configuración, horarios y slug único
+
+¿Cómo se identifica a qué salón pertenece cada usuario?
+Sistema de identificación por rol:
+- ADMIN: El userId coincide con salon.adminId (un admin = un salón)
+- WORKER: El usuario tiene un campo salonId que indica dónde trabaja
+En cada petición:
+1. Se obtiene el userId del JWT
+2. Se busca el usuario en BD con include: { salon: true, worksAt: true }
+3. Se determina el salonId: user.salon?.id || user.worksAt?.id
+4. Todas las consultas subsiguientes filtran por ese salonId
+
+¿Qué es el slug y para qué sirve?
+El slug es un identificador único legible para URLs:
+- Se genera automáticamente del nombre del salón usando slugify (ej: "Peluquería María" → "peluqueria-maria")
+- Permite tener URLs públicas únicas: /salon/{slug}
+- Cada salón tiene su página pública de reservas accesible mediante su slug
+- El slug es único en toda la BD (unique constraint)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. GESTIÓN DE CITAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo funciona el sistema de reserva de citas?
+Existen dos flujos de creación de citas:
+
+Flujo 1 - Reserva pública (sin autenticación):
+1. Cliente accede a /salon/{slug}
+2. Frontend detecta si hay usuario autenticado (admin/worker del salón)
+3. Si está autenticado, autocompleta nombre, email y teléfono del usuario
+4. Frontend carga servicios y horarios del salón desde GET /public/:slug
+5. Cliente selecciona servicio y fecha
+6. Frontend obtiene slots disponibles desde GET /public/:slug/slots?date=YYYY-MM-DD&serviceId=X
+7. Cliente selecciona hora
+8. Si está autenticado, campos son de solo lectura y puede confirmar directamente
+9. Si no está autenticado, completa datos (nombre, teléfono/email)
+10. Se envía POST /public/:slug/book con todos los datos
+11. Backend crea o busca el cliente, crea la cita y envía notificaciones
+12. Se genera notificación interna para el admin del salón
+Ventajas para usuarios autenticados:
+- Datos autocompletados (nombre, email, teléfono)
+- Sin necesidad de escribir información personal
+- Botón de acceso rápido al dashboard desde el header
+- Proceso de reserva más rápido
+
+Flujo 2 - Creación desde el dashboard (requiere autenticación):
+1. Usuario autenticado accede al dashboard de citas
+2. Selecciona cliente existente o crea uno nuevo
+3. Elige servicio, empleado, fecha y hora
+4. Se valida que no haya conflictos de horario
+5. Se crea la cita con estado PENDING o CONFIRMED según configuración
+
+¿Cómo se calculan los slots disponibles?
+Algoritmo de generación de slots:
+1. Se obtiene el día de la semana (0=domingo, 6=sábado) de la fecha solicitada
+2. Se consultan los horarios configurados en SalonSchedule para ese día (ej: 09:00-14:00, 16:00-20:00)
+3. Si el día está marcado como cerrado (isClosed=true), se devuelve array vacío
+4. Se generan slots de 15 minutos dentro de cada bloque horario
+5. Se consultan las citas existentes para esa fecha en ese salón
+6. Para cada slot, se verifica:
+   - Si hay citas que ocupan ese tiempo (comparando startTime y endTime)
+   - Si el slot ya pasó (comparando con hora actual si es hoy)
+   - Si el slot tiene espacio suficiente para la duración del servicio
+7. Se devuelven solo los slots disponibles
+
+¿Cómo se previenen conflictos de horario?
+Sistema de validación en múltiples capas:
+1. Frontend: Los slots ocupados no se muestran como seleccionables
+2. Backend: Al crear/editar cita, se buscan citas conflictivas con OR lógico:
+   - Citas que empiezan antes y terminan después del inicio de la nueva
+   - Citas que empiezan antes del final de la nueva
+   - Citas completamente contenidas en el rango de la nueva
+3. Si existe conflicto, se devuelve error 409 Conflict
+4. Solo se permite la creación si no hay overlap
+
+¿Qué estados puede tener una cita?
+Estados del ciclo de vida:
+- PENDING: Cita recién creada, pendiente de confirmación
+- CONFIRMED: Cita confirmada por el salón
+- COMPLETED: Servicio completado, cliente atendido
+- CANCELLED: Cita cancelada (por cliente o salón)
+- NO_SHOW: Cliente no se presentó
+
+Transiciones de estado:
+- PENDING → CONFIRMED (con permiso canConfirmAppointments)
+- PENDING/CONFIRMED → CANCELLED (con permiso canCancelAppointments)
+- CONFIRMED → COMPLETED (cualquier trabajador puede marcar)
+- CONFIRMED → NO_SHOW (cualquier trabajador puede marcar)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. GESTIÓN DE CLIENTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo se crean y gestionan los clientes?
+Los clientes se crean automáticamente o manualmente:
+- Creación automática: Al reservar una cita desde la página pública, si no existe un cliente con ese teléfono/email, se crea automáticamente
+- Creación manual: Desde el dashboard, requiere permisos canEditClients
+Datos almacenados:
+- Información básica: nombre, teléfono, email
+- Vinculación: salonId (cada cliente pertenece a un salón)
+- Relaciones: appointments[] (historial de citas)
+
+¿Cómo funciona la búsqueda de clientes duplicados?
+Al crear un cliente (reserva pública o manual):
+1. Se busca en la BD con findFirst filtrando por salonId y OR lógico:
+   - Si existe teléfono, busca por phone
+   - Si existe email, busca por email
+2. Si se encuentra coincidencia, se reutiliza ese cliente
+3. Si no existe, se crea uno nuevo
+Esto evita duplicados y mantiene el historial unificado por cliente
+
+¿Qué estadísticas se calculan para cada cliente?
+Cálculos dinámicos en tiempo real:
+- totalAppointments: Count de todas sus citas
+- completedAppointments: Count de citas con status COMPLETED
+- cancelledAppointments: Count de citas con status CANCELLED
+- totalSpent: Suma de service.price de citas COMPLETED
+- lastAppointmentDate: startTime de la cita más reciente
+- lastService: Nombre del servicio de la última cita
+Estas se calculan en el backend cada vez que se consulta la lista de clientes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. SISTEMA DE NOTIFICACIONES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo funciona el sistema de notificaciones internas?
+Sistema en tiempo real con polling:
+1. Cada notificación se guarda en la tabla Notification con: userId, message, type, read (boolean), sentAt
+2. El Header_Element.vue consulta GET /notifications/unread al montar
+3. Se actualiza automáticamente cada 30 segundos mediante setInterval
+4. Se muestra badge con contador de no leídas
+5. Al hacer clic en una notificación, se marca como leída con PUT /notifications/:id/read
+6. Opción de marcar todas como leídas: PUT /notifications/read-all
+
+¿Cuándo se generan notificaciones automáticas?
+Eventos que disparan notificaciones:
+- Nueva cita desde página pública: Notificación al admin con detalles de la cita
+- Cancelación de cita: Notificación al admin y al empleado asignado
+- Recordatorios: Sistema configurable para enviar X horas antes de la cita
+- Campañas marketing: Al enviar, se puede generar notificación de confirmación
+
+¿Qué tipos de notificaciones existen?
+Tipos definidos en el enum NotificationType:
+- REMINDER: Recordatorios de citas próximas
+- CANCELLATION: Avisos de citas canceladas
+- PROMOTION: Notificaciones de campañas promocionales
+Cada tipo puede tener un icono y estilo visual diferente en el frontend
+
+¿Cómo funcionan las notificaciones por email?
+Integración con Gmail mediante Nodemailer:
+1. Configuración SMTP en .env (SMTP_USER, SMTP_PASS)
+2. Servicio sendEmail(to, subject, message) en notificationService.ts
+3. Plantilla HTML con estilos inline para compatibilidad
+4. Uso:
+   - Confirmación de citas para clientes
+   - Recuperación de contraseña
+   - Campañas de marketing
+   - Recordatorios automáticos
+
+¿Cómo funcionan las notificaciones por WhatsApp?
+Integración con WhatsApp Business API de Meta:
+1. Configuración en .env (WHATSAPP_TOKEN, WHATSAPP_PHONE_ID)
+2. Servicio sendWhatsApp(phone, message) usando Graph API
+3. Endpoint: https://graph.facebook.com/v17.0/{phone_id}/messages
+4. Formato de número: Debe incluir código de país (ej: +34666777888)
+5. Limitaciones: Requiere cuenta Business verificada y plantillas aprobadas
+6. Uso: Confirmaciones, recordatorios, campañas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. SISTEMA DE MARKETING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo funciona el módulo de campañas de marketing?
+Sistema de envío masivo personalizado:
+1. Usuario selecciona canal (email, whatsapp, o ambos)
+2. Elige tipo de campaña: promotional, reminder, custom
+3. Selecciona plantilla predefinida o escribe mensaje personalizado
+4. Define destinatarios: todos los clientes o selección manual
+5. Vista previa en tiempo real con variables reemplazadas
+6. Al enviar, el backend:
+   - Obtiene lista de clientes del salón
+   - Personaliza mensaje para cada uno (reemplaza {nombre}, {salon_name}, {salon_url})
+   - Envía según canal seleccionado
+   - Registra éxitos y fallos
+   - Devuelve reporte: { total, success, failed, errors[] }
+
+¿Qué variables se pueden usar en las plantillas?
+Variables disponibles para personalización:
+- {nombre}: Se reemplaza con client.name
+- {salon_name}: Nombre del salón del usuario
+- {salon_url}: URL de reservas públicas (http://localhost:8080/salon/{slug})
+Ejemplo:
+"Hola {nombre}, desde {salon_name} te ofrecemos 20% descuento. Reserva en {salon_url}"
+Se convierte en:
+"Hola María, desde Peluquería Elegance te ofrecemos 20% descuento. Reserva en http://localhost:8080/salon/peluqueria-elegance"
+
+¿Cómo se gestionan los errores de envío?
+Sistema robusto de manejo de errores:
+1. Validación previa: Se verifica que cada cliente tenga el método de contacto requerido (email para email, phone para WhatsApp)
+2. Envío individual con try-catch: Cada cliente se procesa independientemente
+3. Si falla uno, se continúa con el resto
+4. Se registra cada error con detalles
+5. Respuesta final incluye:
+   - Contador de éxitos
+   - Contador de fallos
+   - Array de errores detallados por cliente
+6. Frontend muestra resumen con posibilidad de reintentar los fallidos
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. CONFIGURACIÓN Y HORARIOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo se configuran los horarios del salón?
+Sistema flexible de horarios por día:
+1. Tabla SalonSchedule con campos: salonId, dayOfWeek (0-6), openingTime, closingTime, isClosed
+2. Cada día puede tener múltiples bloques horarios (ej: 9:00-14:00 y 16:00-20:00)
+3. Si isClosed=true, ese día no se permiten reservas
+4. Formato de horas: String "HH:MM" (ej: "09:00", "14:30")
+5. Desde el dashboard, ADMIN puede:
+   - Añadir bloques horarios por día
+   - Editar horarios existentes
+   - Marcar días como cerrados
+   - Ver vista semanal completa
+
+¿Qué otras configuraciones están disponibles?
+Tabla Config con opciones del salón:
+- requireConfirmation: Si las citas públicas requieren confirmación manual
+- workersCanCreateServices: Si los trabajadores pueden crear servicios nuevos
+- canAcceptAppointments: Activar/desactivar reservas públicas
+- canModifyAppointments: Permitir modificar citas desde página pública
+- openingTime/closingTime: Horarios base (deprecado, ahora se usa SalonSchedule)
+- serviceIntervalMinutes: Intervalo entre slots (15, 30, 60 min)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. INFORMES Y ESTADÍSTICAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo se calculan las estadísticas del dashboard?
+Cálculos en tiempo real desde la base de datos:
+1. Se obtienen todas las citas del salón con include de relaciones (client, service)
+2. Filtros aplicables:
+   - Rango de fechas (última semana, mes, año, personalizado)
+   - Estado de citas (completadas, canceladas, pendientes)
+3. Métricas calculadas:
+   - Total de ingresos: Suma de service.price de citas COMPLETED
+   - Promedio por cita: totalIngresos / numCitas
+   - Citas completadas: Count WHERE status = COMPLETED
+   - Tasa de cancelación: (canceladas / total) * 100
+   - Servicios populares: Group by serviceId, count y order by count DESC
+   - Clientes TOP: Group by clientId, sum de gastos, order by sum DESC
+
+¿Cómo funciona la exportación a CSV?
+Sistema de generación de CSV en el frontend:
+1. Función downloadCSV(data, filename, headers) reutilizable
+2. Proceso:
+   - Convierte array de objetos a formato CSV con separador de comas
+   - Añade encabezados personalizados
+   - Crea Blob con tipo text/csv;charset=utf-8
+   - Genera URL temporal con URL.createObjectURL()
+   - Crea elemento <a> invisible con download attribute
+   - Simula click para descargar
+   - Limpia URL temporal
+3. Tipos de exportación disponibles:
+   - Lista de citas (con cliente, servicio, fecha, estado, precio)
+   - Estadísticas generales
+   - Servicios más populares
+   - Ingresos por servicio
+   - Clientes TOP
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. GESTIÓN DE INVENTARIO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo funciona el control de inventario?
+Sistema básico de control de stock:
+- Tabla Inventory con: salonId, productName, quantity, minQuantity, unit
+- Cada salón gestiona su propio inventario (filtrado por salonId)
+- CRUD completo:
+  * Crear producto con stock inicial
+  * Actualizar cantidad (incrementar/decrementar)
+  * Eliminar producto
+  * Ver lista completa con alertas de stock bajo
+- Alerta automática: Si quantity <= minQuantity, se marca visualmente
+- Futuras mejoras: Descontar automáticamente al completar servicios, historial de movimientos
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. BASE DE DATOS Y PRISMA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo funciona Prisma ORM en el proyecto?
+Prisma actúa como capa de abstracción sobre PostgreSQL:
+1. Schema declarativo: prisma/schema.prisma define modelos y relaciones
+2. Migraciones: Cada cambio genera una migración SQL versionada
+3. Cliente autogenerado: npx prisma generate crea un cliente tipado en TypeScript
+4. Uso en código:
+   const prisma = new PrismaClient()
+   const users = await prisma.user.findMany({ include: { salon: true } })
+5. Ventajas:
+   - Type safety completo
+   - Autocompletado en IDE
+   - Migraciones automáticas
+   - Queries optimizadas
+
+¿Cuáles son las entidades principales y sus relaciones?
+Modelo de datos relacional:
+
+User (1) ←→ (1) Salon [admin]
+User (N) ←→ (1) Salon [workers] (worksAt)
+Salon (1) ←→ (N) Client
+Salon (1) ←→ (N) Service
+Salon (1) ←→ (N) Inventory
+Salon (1) ←→ (N) SalonSchedule
+Salon (1) ←→ (1) Config
+Client (1) ←→ (N) Appointment
+User (1) ←→ (N) Appointment [stylist]
+Service (1) ←→ (N) Appointment
+User (1) ←→ (N) Notification
+
+Claves foráneas principales:
+- User.salonId → Salon.id (para workers)
+- Salon.adminId → User.id (para admin)
+- Client.salonId → Salon.id
+- Appointment.clientId → Client.id
+- Appointment.stylistId → User.id
+- Appointment.serviceId → Service.id
+
+¿Cómo se gestionan las migraciones de base de datos?
+Flujo de trabajo con migraciones:
+1. Desarrollo: Modificar prisma/schema.prisma
+2. Crear migración: npx prisma migrate dev --name descripcion_cambio
+3. Prisma genera:
+   - SQL migration file en prisma/migrations/
+   - Aplica cambios a la BD de desarrollo
+   - Regenera el cliente
+4. Producción: npx prisma migrate deploy (solo aplica, no crea)
+5. Rollback: No hay comando automático, se debe crear migración inversa
+6. Historial: Todas las migraciones se guardan y versionan en Git
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. FRONTEND Y NAVEGACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo funciona el sistema de rutas en Vue?
+Vue Router gestiona navegación SPA:
+1. Configuración en frontend/src/router/index.js
+2. Rutas definidas:
+   - / (redirect a /login)
+   - /login (Login_Page.vue)
+   - /register (Register_Page.vue)
+   - /reset-password/:token (ResetPassword_Page.vue)
+   - /dashboard (Dashboard_Page.vue) - Requiere auth
+   - /salon/:slug (SalonPublicPage.vue) - Pública
+3. Protección de rutas: meta: { requiresAuth: true }
+4. Guardia de navegación: beforeEach verifica token en localStorage
+5. Si no hay token y ruta requiere auth → redirect /login
+
+¿Cómo se comunica el frontend con el backend?
+Sistema de peticiones HTTP con Axios:
+1. Configuración base: const API_URL = 'http://localhost:3000'
+2. Todas las peticiones protegidas incluyen:
+   headers: { Authorization: `Bearer ${token}` }
+3. Patrón típico:
+   try {
+     const token = localStorage.getItem('token')
+     const response = await axios.get(`${API_URL}/endpoint`, { headers: {...} })
+     // Procesar response.data
+   } catch (error) {
+     // Manejar error
+     if (error.response?.status === 401) {
+       // Token expirado, redirigir a login
+     }
+   }
+4. Datos de usuario en localStorage:
+   - token: JWT string
+   - user: JSON con { id, email, role, name, salon, permissions }
+
+¿Cómo funciona la reactividad en Vue 3?
+Sistema de Composition API con refs y computed:
+1. ref(): Crea variable reactiva
+   const count = ref(0)
+   count.value++ // Actualiza y re-renderiza
+2. computed(): Valor calculado que se actualiza automáticamente
+   const double = computed(() => count.value * 2)
+3. watch(): Observa cambios en reactive data
+4. Ciclo de vida:
+   - onMounted: Al montar componente
+   - onBeforeUnmount: Antes de destruir
+5. Template reactivo: {{ variable }} se actualiza automáticamente
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. DISEÑO Y ESTILOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Por qué se usa Tailwind CSS?
+Ventajas de Tailwind en el proyecto:
+- Utility-first: Clases directamente en el HTML, sin CSS separado
+- Responsive fácil: Prefijos md:, lg:, xl: para breakpoints
+- Consistencia: Sistema de diseño predefinido (colores, espaciado, etc.)
+- No CSS custom: Evita archivos .css grandes y difíciles de mantener
+- Purge: En producción elimina clases no usadas, bundle pequeño
+- Dark mode: Soporte nativo con dark: prefix
+
+¿Cómo se estructura el diseño responsive?
+Enfoque mobile-first con breakpoints:
+1. Base: Estilos sin prefijo aplican a móvil
+2. sm: ≥640px (tablets pequeñas)
+3. md: ≥768px (tablets)
+4. lg: ≥1024px (laptops)
+5. xl: ≥1280px (desktops)
+Ejemplo:
+<div class="w-full lg:w-1/2">
+  - Móvil: ancho completo
+  - Desktop (lg): mitad de ancho
+
+¿Qué patrones de diseño se siguen?
+Componentes reutilizables y consistentes:
+- Botones: Gradientes purple-blue con sombras
+- Inputs: Bordes redondeados, focus ring colorido, iconos integrados
+- Cards: Fondo blanco, sombras suaves, bordes redondeados
+- Modales: Backdrop blur, animaciones de entrada
+- Tablas: Filas hover, estados de carga
+- Notificaciones: Toast con iconos y colores según tipo
+- Header: Fixed top con sombra, notifications badge
+- Sidebar: Sticky con iconos y permisos condicionales
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. DESPLIEGUE Y PRODUCCIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Cómo se prepara el proyecto para producción?
+Pasos de build y optimización:
+
+Backend:
+1. Compilar TypeScript: npm run build
+2. Genera archivos JS en /dist
+3. Variables de entorno en .env
+4. Ejecutar: npm start (usa node dist/index.js)
+
+Frontend:
+1. Build optimizado: npm run build
+2. Genera archivos estáticos en /dist
+3. Minificación automática de JS y CSS
+4. Tree-shaking: Elimina código no usado
+5. Code splitting: Divide en chunks para carga lazy
+6. Servir: Usar servidor estático (nginx, Apache, Vercel, Netlify)
+
+¿Qué consideraciones de seguridad hay en producción?
+Checklist de seguridad:
+✓ JWT_SECRET debe ser largo y aleatorio (min 32 caracteres)
+✓ .env NUNCA se sube a Git (.gitignore)
+✓ CORS configurado solo para dominios permitidos
+✓ HTTPS en producción (certificado SSL)
+✓ Rate limiting en endpoints críticos
+✓ Validación de datos en backend (no confiar en frontend)
+✓ SQL injection prevenido (Prisma usa prepared statements)
+✓ XSS prevenido (Vue escapa HTML automáticamente)
+✓ Tokens con expiración corta (1 hora)
+✓ Contraseñas hasheadas con bcrypt (salt 10)
+
+¿Dónde se puede desplegar la aplicación?
+Opciones de hosting:
+
+Backend:
+- Heroku (fácil, gratis con limitaciones)
+- Railway (moderno, fácil deploy)
+- DigitalOcean (VPS, más control)
+- AWS EC2/Elastic Beanstalk (escalable)
+- Render (alternativa a Heroku)
+
+Frontend:
+- Vercel (recomendado para Vue, deploy automático)
+- Netlify (similar a Vercel)
+- GitHub Pages (solo sitios estáticos)
+- S3 + CloudFront (AWS, escalable)
+
+Base de datos:
+- Railway (incluye PostgreSQL)
+- ElephantSQL (PostgreSQL managed)
+- Heroku Postgres
+- AWS RDS
+- DigitalOcean Managed Databases
+
+Recomendación full-stack:
+- Frontend: Vercel
+- Backend: Railway
+- BD: Railway (mismo servicio)
+- Total: Gratis para proyectos pequeños
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. MANTENIMIENTO Y MEJORAS FUTURAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+¿Qué mejoras están planeadas?
+Roadmap de funcionalidades futuras:
+- Panel de estadísticas avanzado con gráficos (Chart.js/ApexCharts)
+- Sistema de facturación completo con PDF
+- Integración con pasarelas de pago (Stripe, PayPal)
+- App móvil nativa (React Native o Flutter)
+- Sistema de horarios por empleado (cada uno con disponibilidad)
+- Asignación automática de citas según disponibilidad
+- Marketing automatizado (emails recurrentes, birthday campaigns)
+- Sistema de bonos y promociones automáticas
+- Internacionalización (i18n) multi-idioma
+- ChatBot de ayuda con IA
+- TPV integrado para pagos en local
+- Pantalla externa de turnos en tiempo real
+- Resúmenes mensuales generados por IA
+- Sistema de cola para walk-ins
+- Puntuación de fiabilidad de clientes
+- Gestión de stock automatizada con IA
+- Sistema de fichaje para empleados
+
+¿Cómo se mantiene el código actualizado?
+Buenas prácticas de mantenimiento:
+- Dependencias: npm audit y npm update regularmente
+- Seguridad: Revisar vulnerabilidades con npm audit fix
+- Tests: Agregar tests unitarios y e2e (Jest, Cypress)
+- Linting: ESLint configurado para mantener código limpio
+- Git: Commits descriptivos, branches por feature
+- Documentación: Mantener README y Q&A actualizados
+- Migraciones: Nunca editar migraciones antiguas, crear nuevas
+- Logs: Sistema de logging estructurado (Winston, Pino)
+- Monitoring: Herramientas como Sentry para errores en producción
+
+==========================================
+FIN DEL DOCUMENTO Q&A
+==========================================

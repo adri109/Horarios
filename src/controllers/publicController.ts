@@ -235,7 +235,7 @@ export const getSalonSlots = async (req: Request, res: Response) => {
 // Crear una cita desde la página pública
 export const createPublicAppointment = async (req: Request, res: Response) => {
   const { slug } = req.params;
-  const { clientName, clientPhone, clientEmail, serviceId, startTime } = req.body;
+  const { clientName, clientPhone, clientEmail, serviceId, startTime, isStaffBooking } = req.body;
 
   // Validaciones
   if (!clientName || !serviceId || !startTime) {
@@ -356,28 +356,30 @@ export const createPublicAppointment = async (req: Request, res: Response) => {
 
     console.log(`✅ Cita creada exitosamente (ID: ${appointment.id})`);
 
-    // Crear notificación en el sistema para el admin
-    const formattedDate = start.toLocaleDateString('es-ES', { 
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    await createNotification(
-      salon.adminId,
-      `Nueva cita: ${clientName} - ${service.name} el ${formattedDate}`,
-      'REMINDER'
-    );
+    // Solo enviar notificaciones si NO es una reserva de trabajador
+    if (!isStaffBooking) {
+      // Crear notificación en el sistema para el admin
+      const formattedDate = start.toLocaleDateString('es-ES', { 
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      await createNotification(
+        salon.adminId,
+        `Nueva cita: ${clientName} - ${service.name} el ${formattedDate}`,
+        'REMINDER'
+      );
 
-    // Enviar notificaciones de confirmación
-    const notificationData = {
-      clientName: appointment.client.name,
-      clientEmail: clientEmail || undefined,
-      clientPhone: clientPhone || undefined,
-      salonName: salon.name,
-      serviceName: appointment.service.name,
-      date: appointment.startTime.toLocaleDateString('es-ES', { 
-        weekday: 'long', 
+      // Enviar notificaciones de confirmación
+      const notificationData = {
+        clientName: appointment.client.name,
+        clientEmail: clientEmail || undefined,
+        clientPhone: clientPhone || undefined,
+        salonName: salon.name,
+        serviceName: appointment.service.name,
+        date: appointment.startTime.toLocaleDateString('es-ES', { 
+          weekday: 'long', 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric' 
@@ -392,14 +394,17 @@ export const createPublicAppointment = async (req: Request, res: Response) => {
       salonPhone: salon.phone || undefined,
     };
 
-    // Enviar notificaciones de forma asíncrona (no bloquea la respuesta)
-    sendAppointmentNotifications(notificationData)
-      .then(result => {
-        console.log(`📧 Notificaciones enviadas - Email: ${result.emailSent ? '✅' : '❌'}, SMS: ${result.smsSent ? '✅' : '❌'}`);
-      })
-      .catch(err => {
-        console.error('❌ Error enviando notificaciones:', err);
-      });
+      // Enviar notificaciones de forma asíncrona (no bloquea la respuesta)
+      sendAppointmentNotifications(notificationData)
+        .then(result => {
+          console.log(`📧 Notificaciones enviadas - Email: ${result.emailSent ? '✅' : '❌'}, SMS: ${result.smsSent ? '✅' : '❌'}`);
+        })
+        .catch(err => {
+          console.error('❌ Error enviando notificaciones:', err);
+        });
+    } else {
+      console.log(`🔕 Reserva de trabajador - Sin notificaciones`);
+    }
 
     res.status(201).json({
       message: 'Cita creada exitosamente',

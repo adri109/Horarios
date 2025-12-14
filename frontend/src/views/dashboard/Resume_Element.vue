@@ -109,7 +109,12 @@ onMounted(() => {
         <!-- Cita Actual -->
         <div v-if="stats.currentAppointment" class="current-appointment active">
           <div class="appointment-header">
-            <span class="status-badge active">🔴 EN CURSO</span>
+            <span class="status-badge active">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="badge-icon">
+                <circle cx="12" cy="12" r="10"/>
+              </svg>
+              EN CURSO
+            </span>
             <span class="appointment-time">{{ formatTime(stats.currentAppointment.startTime) }} - {{ formatTime(stats.currentAppointment.endTime) }}</span>
           </div>
           <div class="appointment-body">
@@ -118,15 +123,26 @@ onMounted(() => {
               <div>
                 <h3>{{ stats.currentAppointment.client.name }}</h3>
                 <p class="service-name">{{ stats.currentAppointment.service.name }}</p>
-                <p class="phone">📱 {{ stats.currentAppointment.client.phone }}</p>
+                <p class="phone">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="phone-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                  </svg>
+                  {{ stats.currentAppointment.client.phone }}
+                </p>
               </div>
             </div>
             <div class="appointment-actions">
               <button @click="updateAppointmentStatus(stats.currentAppointment.id, 'COMPLETED')" class="btn-complete">
-                ✓ Completar
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="btn-icon">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                Completar
               </button>
               <button @click="updateAppointmentStatus(stats.currentAppointment.id, 'CANCELLED')" class="btn-cancel">
-                ✗ No vino
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="btn-icon">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                No vino
               </button>
             </div>
           </div>
@@ -135,7 +151,12 @@ onMounted(() => {
         <!-- Próxima Cita -->
         <div v-else-if="stats.nextAppointment" class="current-appointment next">
           <div class="appointment-header">
-            <span class="status-badge next">⏰ PRÓXIMA</span>
+            <span class="status-badge next">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="badge-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              PRÓXIMA
+            </span>
             <span class="appointment-time">{{ formatTime(stats.nextAppointment.startTime) }} - {{ formatTime(stats.nextAppointment.endTime) }}</span>
           </div>
           <div class="appointment-body">
@@ -144,7 +165,12 @@ onMounted(() => {
               <div>
                 <h3>{{ stats.nextAppointment.client.name }}</h3>
                 <p class="service-name">{{ stats.nextAppointment.service.name }}</p>
-                <p class="phone">📱 {{ stats.nextAppointment.client.phone }}</p>
+                <p class="phone">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="phone-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                  </svg>
+                  {{ stats.nextAppointment.client.phone }}
+                </p>
               </div>
             </div>
           </div>
@@ -153,7 +179,11 @@ onMounted(() => {
         <!-- Sin citas -->
         <div v-else class="current-appointment empty">
           <div class="empty-state-small">
-            <span class="empty-icon">📅</span>
+            <span class="empty-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              </svg>
+            </span>
             <p>No hay citas programadas ahora</p>
           </div>
         </div>
@@ -164,7 +194,11 @@ onMounted(() => {
         <!-- Ingresos Hoy -->
         <div class="stat-card highlight">
           <div class="stat-header">
-            <span class="stat-icon">💰</span>
+            <span class="stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
             <h3>Ingresos Hoy</h3>
           </div>
           <p class="stat-value">{{ formatPrice(stats.today.revenue) }}</p>
@@ -177,21 +211,44 @@ onMounted(() => {
         <!-- Citas Hoy -->
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-icon">📅</span>
+            <span class="stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              </svg>
+            </span>
             <h3>Citas Hoy</h3>
           </div>
           <p class="stat-value">{{ stats.today.appointments }}</p>
           <div class="mini-stats">
-            <span class="mini-stat success">✓ {{ stats.today.completed }}</span>
-            <span class="mini-stat pending">⏳ {{ stats.today.pending }}</span>
-            <span class="mini-stat cancelled">✗ {{ stats.today.cancelled }}</span>
+            <span class="mini-stat success">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="mini-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              {{ stats.today.completed }}
+            </span>
+            <span class="mini-stat pending">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mini-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {{ stats.today.pending }}
+            </span>
+            <span class="mini-stat cancelled">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="mini-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              {{ stats.today.cancelled }}
+            </span>
           </div>
         </div>
 
         <!-- Nuevos Clientes Hoy -->
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-icon">👤</span>
+            <span class="stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+            </span>
             <h3>Nuevos Hoy</h3>
           </div>
           <p class="stat-value">{{ stats.today.newClients }}</p>
@@ -201,7 +258,11 @@ onMounted(() => {
         <!-- Ingresos del Mes -->
         <div class="stat-card highlight">
           <div class="stat-header">
-            <span class="stat-icon">📊</span>
+            <span class="stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+              </svg>
+            </span>
             <h3>Ingresos del Mes</h3>
           </div>
           <p class="stat-value">{{ formatPrice(stats.month.revenue) }}</p>
@@ -211,7 +272,11 @@ onMounted(() => {
         <!-- Nuevos Clientes Semana -->
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-icon">📈</span>
+            <span class="stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+              </svg>
+            </span>
             <h3>Nuevos (7 días)</h3>
           </div>
           <p class="stat-value">{{ stats.week.newClients }}</p>
@@ -221,7 +286,11 @@ onMounted(() => {
         <!-- Nuevos Clientes Mes -->
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-icon">🎯</span>
+            <span class="stat-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+              </svg>
+            </span>
             <h3>Nuevos (mes)</h3>
           </div>
           <p class="stat-value">{{ stats.month.newClients }}</p>
@@ -373,6 +442,14 @@ onMounted(() => {
   border-radius: 20px;
   font-size: 0.875rem;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .status-badge.active {
@@ -434,6 +511,15 @@ onMounted(() => {
   color: #64748b;
   font-size: 0.875rem;
   margin: 0.25rem 0 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.phone-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
 .appointment-actions {
@@ -449,6 +535,15 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.btn-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .btn-complete {
@@ -477,9 +572,16 @@ onMounted(() => {
 }
 
 .empty-icon {
-  font-size: 3rem;
+  width: 3rem;
+  height: 3rem;
+  color: #cbd5e1;
+  margin: 0 auto 0.5rem;
   display: block;
-  margin-bottom: 0.5rem;
+}
+
+.empty-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 /* Stats Grid */
@@ -516,7 +618,20 @@ onMounted(() => {
 }
 
 .stat-icon {
-  font-size: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  flex-shrink: 0;
+}
+
+.stat-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: white;
 }
 
 .stat-header h3 {
@@ -551,6 +666,14 @@ onMounted(() => {
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.mini-icon {
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .mini-stat.success {
