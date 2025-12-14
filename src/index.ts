@@ -1,4 +1,6 @@
 import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth';
 import appointmentRoutes from './routes/appointmentRoutes';
@@ -17,6 +19,53 @@ import { execSync } from 'child_process';
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
+const prisma = new PrismaClient();
+
+// Configurar Socket.IO con CORS
+const io = new Server(httpServer, {
+  cors: {
+    origin: (origin, callback) => {
+      const allowedOrigins = process.env.FRONTEND_URL 
+        ? [
+            process.env.FRONTEND_URL,
+            'http://localhost:8080',
+            'http://localhost:3000',
+            'https://horariosv2-mizto6ixm-adri109s-projects.vercel.app',
+          ]
+        : ['http://localhost:8080', 'http://localhost:3000'];
+      
+      const isVercelApp = origin && origin.match(/https:\/\/.*\.vercel\.app$/);
+      
+      if (!origin || allowedOrigins.includes(origin) || isVercelApp) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+// Exportar io para usarlo en otros módulos
+export { io };
+
+// Gestión de conexiones WebSocket
+io.on('connection', (socket) => {
+  console.log('🔌 Cliente conectado:', socket.id);
+  
+  // Unir al usuario a su room personal
+  socket.on('join', (userId: number) => {
+    socket.join(`user_${userId}`);
+    console.log(`👤 Usuario ${userId} unido a su room`);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('🔌 Cliente desconectado:', socket.id);
+  });
+});
+
 const prisma = new PrismaClient();
 
 // Ejecutar migraciones en producción DESPUÉS de iniciar el servidor
@@ -89,6 +138,7 @@ app.use('/notifications', notificationRoutes);
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 // Escuchar en todas las interfaces de red (0.0.0.0)
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
+httpServer.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor HTTP corriendo en puerto ${PORT}`);
+  console.log(`🔌 Socket.IO listo en ws://0.0.0.0:${PORT}`);
 });

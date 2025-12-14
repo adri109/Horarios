@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { io } from '../index';
 
 const prisma = new PrismaClient();
 
@@ -107,7 +108,29 @@ export const createAppointment = async (req: Request, res: Response) => {
         startTime: new Date(startTime),
         endTime: new Date(endTime),
       },
+      include: {
+        service: {
+          include: {
+            salon: {
+              include: {
+                admin: true,
+                workers: true
+              }
+            }
+          }
+        }
+      }
     });
+
+    // Emitir evento WebSocket a todos los usuarios del salón
+    const salon = appointment.service.salon;
+    const userIds = [salon.adminId, ...salon.workers.map(w => w.id)];
+    
+    userIds.forEach(userId => {
+      io.to(`user_${userId}`).emit('appointment-created', { appointmentId: appointment.id });
+    });
+    
+    console.log(`📡 Evento appointment-created emitido al salón ${salon.id}`);
 
     res.status(201).json(appointment);
   } catch (error) {
@@ -189,7 +212,30 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     const appointment = await prisma.appointment.update({
       where: { id: Number(id) },
       data: { status },
+      include: {
+        service: {
+          include: {
+            salon: {
+              include: {
+                admin: true,
+                workers: true
+              }
+            }
+          }
+        }
+      }
     });
+
+    // Emitir evento WebSocket
+    const appointmentSalon = appointment.service.salon;
+    const userIds = [appointmentSalon.adminId, ...appointmentSalon.workers.map(w => w.id)];
+    
+    const eventType = status === 'CANCELLED' ? 'appointment-cancelled' : 'appointment-updated';
+    userIds.forEach(userId => {
+      io.to(`user_${userId}`).emit(eventType, { appointmentId: appointment.id, status });
+    });
+    
+    console.log(`📡 Evento ${eventType} emitido al salón ${appointmentSalon.id}`);
 
     res.json(appointment);
   } catch (error) {

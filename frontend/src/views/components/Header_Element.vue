@@ -2,8 +2,10 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from '@/utils/axios';
+import { useSocket } from '@/composables/useSocket';
 
 const router = useRouter();
+const { socket, on, off } = useSocket();
 
 const isDropdownOpen = ref(false);
 const profileButton = ref(null);
@@ -150,6 +152,12 @@ const logout = () => {
   router.push('/login');
 };
 
+// Listener para nuevas notificaciones
+const handleNewNotification = (notification) => {
+  console.log('📬 Nueva notificación recibida:', notification);
+  notifications.value.unshift(notification);
+};
+
 onMounted(() => {
   window.addEventListener('click', handleClickOutside);
   
@@ -161,17 +169,13 @@ onMounted(() => {
   // Cargar notificaciones iniciales
   fetchNotifications();
   
-  // Actualizar notificaciones cada 30 segundos
-  const interval = setInterval(fetchNotifications, 30000);
-  
-  // Limpiar interval al desmontar
-  onBeforeUnmount(() => {
-    clearInterval(interval);
-  });
+  // Escuchar nuevas notificaciones via WebSocket
+  on('new-notification', handleNewNotification);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('click', handleClickOutside);
+  off('new-notification', handleNewNotification);
 });
 </script>
 

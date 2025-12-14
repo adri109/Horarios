@@ -1,6 +1,9 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import axios from '@/utils/axios';
+import { useSocket } from '@/composables/useSocket';
+
+const { on, off } = useSocket();
 
 const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 const stats = ref(null);
@@ -76,10 +79,25 @@ const dailyProgress = computed(() => {
   return Math.min((stats.value.today.revenue / target) * 100, 100);
 });
 
+// Listener para actualizar stats cuando haya cambios
+const handleDataUpdate = (data) => {
+  console.log('🔄 Actualizando estadísticas...', data);
+  fetchStats();
+};
+
 onMounted(() => {
   fetchStats();
-  // Actualizar cada minuto
-  setInterval(fetchStats, 60000);
+  
+  // Escuchar eventos de actualización
+  on('appointment-created', handleDataUpdate);
+  on('appointment-updated', handleDataUpdate);
+  on('appointment-cancelled', handleDataUpdate);
+});
+
+onBeforeUnmount(() => {
+  off('appointment-created', handleDataUpdate);
+  off('appointment-updated', handleDataUpdate);
+  off('appointment-cancelled', handleDataUpdate);
 });
 </script>
 

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { io } from '../index';
 
 // Configuración del transportador de email
 const transporter = nodemailer.createTransport({

@@ -364,8 +364,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import axios from '@/utils/axios';
+import { useSocket } from '@/composables/useSocket';
+
+const { on, off } = useSocket();
 
 const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 
@@ -632,8 +635,25 @@ const getStatusText = (status) => {
   return texts[status] || status;
 };
 
+// Listener para actualizar citas en tiempo real
+const handleAppointmentUpdate = (data) => {
+  console.log('📅 Actualizando lista de citas...', data);
+  fetchCitas();
+};
+
 onMounted(() => {
   fetchCitas();
+  
+  // Escuchar eventos de citas
+  on('appointment-created', handleAppointmentUpdate);
+  on('appointment-updated', handleAppointmentUpdate);
+  on('appointment-cancelled', handleAppointmentUpdate);
+});
+
+onBeforeUnmount(() => {
+  off('appointment-created', handleAppointmentUpdate);
+  off('appointment-updated', handleAppointmentUpdate);
+  off('appointment-cancelled', handleAppointmentUpdate);
 });
 </script>
 

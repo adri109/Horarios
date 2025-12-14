@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { io } from '../index';
 
 const prisma = new PrismaClient();
 
@@ -121,6 +122,11 @@ export const createNotification = async (
         read: false
       }
     });
+    
+    // Emitir evento WebSocket al usuario específico
+    io.to(`user_${userId}`).emit('new-notification', notification);
+    console.log(`📡 Notificación emitida via WebSocket a user_${userId}`);
+    
     return notification;
   } catch (error) {
     console.error('❌ Error creando notificación:', error);
