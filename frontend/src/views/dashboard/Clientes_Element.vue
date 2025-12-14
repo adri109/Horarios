@@ -13,7 +13,7 @@ const sortBy = ref('recent'); // recent, name, spent
 const selectedClient = ref(null);
 const showClientDetail = ref(false);
 
-const API_URL = 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Estadísticas generales
 const stats = computed(() => {

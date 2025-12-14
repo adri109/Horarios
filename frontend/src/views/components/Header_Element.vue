@@ -13,7 +13,7 @@ const user = JSON.parse(localStorage.getItem('user'));
 const salonSlug = user?.salonSlug || null;
 const salonName = user?.salonName || user?.salon?.name || 'Mi Salón';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 console.log(user.name);
 

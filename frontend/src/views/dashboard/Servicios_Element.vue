@@ -164,7 +164,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { usePermissions } from '../../composables/usePermissions';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Verificar permisos
 usePermissions('canViewServices');
