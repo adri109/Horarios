@@ -5,7 +5,7 @@ import axios from '@/utils/axios';
 import { useSocket } from '@/composables/useSocket';
 
 const router = useRouter();
-const { socket, on, off } = useSocket();
+const { on, off } = useSocket();
 
 const isDropdownOpen = ref(false);
 const profileButton = ref(null);
