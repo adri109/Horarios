@@ -12,31 +12,45 @@ import workerRoutes from './routes/workerRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import dotenv from 'dotenv';
-import path from 'path';
-import cors from 'cors';
 
 dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
 
-// CORS: permitir cualquier origen temporalmente para desarrollo
-app.use(cors({
-  origin: '*', // para pruebas desde móvil/PC
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// CORS configuración
+const allowedOrigins = process.env.FRONTEND_URL 
+  ? [process.env.FRONTEND_URL, 'http://localhost:8080', 'http://localhost:3000']
+  : ['http://localhost:8080', 'http://localhost:3000'];
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json());
+app.use('/notifications', notificationRoutes);
 
-// rutas
-app.use('/auth', authRoutes);
-app.use('/appointments', appointmentRoutes);
-app.use('/services', servicesRoutes);
-app.use('/salon', salonRoutes);
-app.use('/public', publicRoutes);
-app.use('/clients', clientRoutes);
-app.use('/dashboard', dashboardRoutes);
+// Health check para Railway
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Ruta raíz
+app.get('/', (req, res) => {
+  res.json({ message: 'API Horarios - Backend funcionando correctamente' });
+});
+
+// Puerto/dashboard', dashboardRoutes);
 app.use('/config', configRoutes);
 app.use('/workers', workerRoutes);
 app.use('/marketing', marketingRoutes);
