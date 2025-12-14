@@ -16,20 +16,21 @@ import { execSync } from 'child_process';
 
 dotenv.config();
 
-// Ejecutar migraciones en producción (Railway)
-if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
-  try {
-    console.log('🔄 Ejecutando migraciones de Prisma...');
-    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
-    console.log('✅ Migraciones aplicadas correctamente');
-  } catch (error) {
-    console.error('❌ Error al aplicar migraciones:', error);
-    // No salir, intentar iniciar de todos modos
-  }
-}
-
 const app = express();
 const prisma = new PrismaClient();
+
+// Ejecutar migraciones en producción DESPUÉS de iniciar el servidor
+if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
+  setTimeout(() => {
+    try {
+      console.log('🔄 Ejecutando migraciones de Prisma...');
+      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+      console.log('✅ Migraciones aplicadas correctamente');
+    } catch (error) {
+      console.error('❌ Error al aplicar migraciones:', error);
+    }
+  }, 2000);
+}
 
 // CORS configuración
 const allowedOrigins = process.env.FRONTEND_URL 
@@ -51,9 +52,8 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
-app.use('/notifications', notificationRoutes);
 
-// Health check para Railway
+// Health check PRIMERO (antes de todas las rutas)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
@@ -63,17 +63,18 @@ app.get('/', (req, res) => {
   res.json({ message: 'API Horarios - Backend funcionando correctamente' });
 });
 
-// Puerto/dashboard', dashboardRoutes);
+// Rutas de la API
+app.use('/auth', authRoutes);
+app.use('/appointments', appointmentRoutes);
+app.use('/services', servicesRoutes);
+app.use('/salon', salonRoutes);
+app.use('/public', publicRoutes);
+app.use('/clients', clientRoutes);
+app.use('/dashboard', dashboardRoutes);
 app.use('/config', configRoutes);
 app.use('/workers', workerRoutes);
 app.use('/marketing', marketingRoutes);
 app.use('/notifications', notificationRoutes);
-
-// servir frontend (opcional si quieres servir desde el backend)
-// app.use(express.static(path.join(__dirname, '../../frontend/dist')));
-// app.get('*', (req, res) => {
-//   res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
-// });
 
 // Puerto
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
