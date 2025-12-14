@@ -9,33 +9,83 @@
     </div>
 
     <!-- Estadísticas -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">📅</div>
-        <div>
-          <p class="stat-value">{{ stats.hoy }}</p>
-          <p class="stat-label">Citas Hoy</p>
+    <div class="stats-section">
+      <!-- Selector de periodo -->
+      <div class="stats-header">
+        <h2 class="stats-title">Estadísticas</h2>
+        <div class="period-selector">
+          <button 
+            :class="['period-btn', { active: statsPeriod === 'today' }]"
+            @click="statsPeriod = 'today'"
+          >
+            Hoy
+          </button>
+          <button 
+            :class="['period-btn', { active: statsPeriod === 'week' }]"
+            @click="statsPeriod = 'week'"
+          >
+            Semana
+          </button>
+          <button 
+            :class="['period-btn', { active: statsPeriod === 'month' }]"
+            @click="statsPeriod = 'month'"
+          >
+            Mes
+          </button>
+          <button 
+            :class="['period-btn', { active: statsPeriod === 'year' }]"
+            @click="statsPeriod = 'year'"
+          >
+            Año
+          </button>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon">✅</div>
-        <div>
-          <p class="stat-value">{{ stats.completadas }}</p>
-          <p class="stat-label">Completadas</p>
+
+      <!-- Tarjetas de estadísticas -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+            </svg>
+          </div>
+          <div>
+            <p class="stat-value">{{ stats.total }}</p>
+            <p class="stat-label">Total Citas</p>
+          </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">⏳</div>
-        <div>
-          <p class="stat-value">{{ stats.pendientes }}</p>
-          <p class="stat-label">Pendientes</p>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p class="stat-value">{{ stats.completadas }}</p>
+            <p class="stat-label">Completadas</p>
+          </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">❌</div>
-        <div>
-          <p class="stat-value">{{ stats.canceladas }}</p>
-          <p class="stat-label">Canceladas</p>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p class="stat-value">{{ stats.pendientes }}</p>
+            <p class="stat-label">Pendientes</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p class="stat-value">{{ stats.canceladas }}</p>
+            <p class="stat-label">Canceladas</p>
+          </div>
         </div>
       </div>
     </div>
@@ -43,7 +93,11 @@
     <!-- Filtros y búsqueda -->
     <div class="filters-container">
       <div class="search-box">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+        </span>
         <input 
           v-model="searchQuery" 
           type="text" 
@@ -57,13 +111,19 @@
           :class="['filter-btn', { active: viewMode === 'active' }]"
           @click="viewMode = 'active'"
         >
-          📅 Activas
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="btn-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+          Activas
         </button>
         <button 
           :class="['filter-btn', { active: viewMode === 'archived' }]"
           @click="viewMode = 'archived'"
         >
-          📦 Archivadas
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="btn-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+          </svg>
+          Archivadas
         </button>
       </div>
 
@@ -136,19 +196,35 @@
 
         <div class="cita-details">
           <div class="detail-row">
-            <span class="detail-icon">💇</span>
+            <span class="detail-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+              </svg>
+            </span>
             <span class="detail-text">{{ cita.service.name }}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-icon">📅</span>
+            <span class="detail-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+              </svg>
+            </span>
             <span class="detail-text">{{ formatFecha(cita.startTime) }}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-icon">⏰</span>
+            <span class="detail-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
             <span class="detail-text">{{ formatHora(cita.startTime) }} - {{ formatHora(cita.endTime) }}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-icon">💰</span>
+            <span class="detail-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 7.756a4.5 4.5 0 100 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
             <span class="detail-text">{{ formatPrice(cita.service.price) }}</span>
           </div>
         </div>
@@ -159,26 +235,40 @@
             @click="updateStatus(cita.id, 'CONFIRMED')"
             class="btn-confirm"
           >
-            ✓ Confirmar
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="btn-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            Confirmar
           </button>
           <button 
             v-if="cita.status === 'CONFIRMED'"
             @click="updateStatus(cita.id, 'COMPLETED')"
             class="btn-complete"
           >
-            ✓ Completar
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="btn-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Completar
           </button>
           <button 
             v-if="cita.status !== 'CANCELLED' && cita.status !== 'COMPLETED'"
             @click="updateStatus(cita.id, 'CANCELLED')"
             class="btn-cancel"
           >
-            ✗ Cancelar
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="btn-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Cancelar
           </button>
         </div>
         
         <div class="archived-info" v-if="viewMode === 'archived'">
-          <p class="archived-date">📅 Archivada: {{ formatFechaCorta(cita.endTime) }}</p>
+          <p class="archived-date">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+            </svg>
+            Archivada: {{ formatFechaCorta(cita.endTime) }}
+          </p>
           <button @click="showDetails(cita)" class="btn-details">
             Ver detalles
           </button>
@@ -188,7 +278,11 @@
 
     <!-- Sin resultados -->
     <div v-else class="empty-state">
-      <div class="empty-icon">📅</div>
+      <div class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+        </svg>
+      </div>
       <p class="empty-title">No se encontraron citas</p>
       <p class="empty-subtitle">
         {{ searchQuery ? 'Intenta con otra búsqueda' : viewMode === 'archived' ? 'No hay citas archivadas' : 'Aún no tienes citas registradas' }}
@@ -200,7 +294,11 @@
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h2>Detalles de la Cita</h2>
-          <button @click="showDetailModal = false" class="close-btn">✕</button>
+          <button @click="showDetailModal = false" class="close-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         
         <div class="modal-body" v-if="selectedCita">
@@ -280,6 +378,7 @@ const viewMode = ref('active'); // 'active' o 'archived'
 const archivedDateFilter = ref('all');
 const showDetailModal = ref(false);
 const selectedCita = ref(null);
+const statsPeriod = ref('today'); // Periodo para las estadísticas: today, week, month, year
 
 // Determinar si una cita está archivada
 const isArchived = (cita) => {
@@ -288,15 +387,44 @@ const isArchived = (cita) => {
   return (cita.status === 'COMPLETED' || cita.status === 'CANCELLED') && citaDate < now;
 };
 
-// Estadísticas (solo citas activas)
+// Helper para filtrar citas por periodo
+const filterByPeriod = (citas, period) => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  switch(period) {
+    case 'today': {
+      const todayStr = now.toISOString().split('T')[0];
+      return citas.filter(c => c.startTime.startsWith(todayStr));
+    }
+    case 'week': {
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      return citas.filter(c => new Date(c.startTime) >= weekAgo);
+    }
+    case 'month': {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      return citas.filter(c => new Date(c.startTime) >= monthStart);
+    }
+    case 'year': {
+      const yearStart = new Date(now.getFullYear(), 0, 1);
+      return citas.filter(c => new Date(c.startTime) >= yearStart);
+    }
+    default:
+      return citas;
+  }
+};
+
+// Estadísticas según periodo seleccionado
 const stats = computed(() => {
-  const activeCitas = citas.value.filter(c => !isArchived(c));
-  const hoy = new Date().toISOString().split('T')[0];
+  const allCitas = citas.value;
+  const periodCitas = filterByPeriod(allCitas, statsPeriod.value);
+  
   return {
-    hoy: activeCitas.filter(c => c.startTime.startsWith(hoy)).length,
-    completadas: activeCitas.filter(c => c.status === 'COMPLETED').length,
-    pendientes: activeCitas.filter(c => c.status === 'PENDING').length,
-    canceladas: activeCitas.filter(c => c.status === 'CANCELLED').length,
+    total: periodCitas.length,
+    completadas: periodCitas.filter(c => c.status === 'COMPLETED').length,
+    pendientes: periodCitas.filter(c => c.status === 'PENDING').length,
+    canceladas: periodCitas.filter(c => c.status === 'CANCELLED').length,
   };
 });
 
@@ -536,11 +664,61 @@ onMounted(() => {
 }
 
 /* Estadísticas */
+.stats-section {
+  margin-bottom: 2rem;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.stats-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.period-selector {
+  display: flex;
+  gap: 0.5rem;
+  background: #f1f5f9;
+  padding: 0.25rem;
+  border-radius: 10px;
+}
+
+.period-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.period-btn:hover {
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.period-btn.active {
+  background: white;
+  color: #6366f1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2rem;
 }
 
 .stat-card {
@@ -560,7 +738,20 @@ onMounted(() => {
 }
 
 .stat-icon {
-  font-size: 2.5rem;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  flex-shrink: 0;
+}
+
+.stat-icon svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: white;
 }
 
 .stat-value {
@@ -596,7 +787,17 @@ onMounted(() => {
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+
+.search-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .search-input {
@@ -630,6 +831,14 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s;
   color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-btn .btn-icon {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .filter-btn:hover {
@@ -813,9 +1022,15 @@ onMounted(() => {
 }
 
 .detail-icon {
-  font-size: 1.25rem;
-  width: 24px;
-  text-align: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.detail-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .detail-text {
@@ -839,6 +1054,15 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.cita-actions button .btn-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .btn-confirm {
@@ -881,6 +1105,15 @@ onMounted(() => {
   color: #64748b;
   margin: 0 0 0.75rem 0;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.archived-date .inline-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .btn-details {
@@ -943,7 +1176,6 @@ onMounted(() => {
   background: transparent;
   border: none;
   color: white;
-  font-size: 1.5rem;
   cursor: pointer;
   padding: 0;
   width: 32px;
@@ -953,6 +1185,11 @@ onMounted(() => {
   justify-content: center;
   border-radius: 50%;
   transition: background 0.2s;
+}
+
+.close-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .close-btn:hover {
@@ -1026,8 +1263,15 @@ onMounted(() => {
 }
 
 .empty-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
+  width: 5rem;
+  height: 5rem;
+  margin: 0 auto 1.5rem;
+  color: #cbd5e1;
+}
+
+.empty-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .empty-title {
