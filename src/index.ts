@@ -12,8 +12,21 @@ import workerRoutes from './routes/workerRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import dotenv from 'dotenv';
+import { execSync } from 'child_process';
 
 dotenv.config();
+
+// Ejecutar migraciones en producción (Railway)
+if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
+  try {
+    console.log('🔄 Ejecutando migraciones de Prisma...');
+    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+    console.log('✅ Migraciones aplicadas correctamente');
+  } catch (error) {
+    console.error('❌ Error al aplicar migraciones:', error);
+    // No salir, intentar iniciar de todos modos
+  }
+}
 
 const app = express();
 const prisma = new PrismaClient();
