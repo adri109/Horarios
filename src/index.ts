@@ -66,8 +66,6 @@ io.on('connection', (socket) => {
   });
 });
 
-const prisma = new PrismaClient();
-
 // Ejecutar migraciones en producción DESPUÉS de iniciar el servidor
 if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
   setTimeout(() => {
