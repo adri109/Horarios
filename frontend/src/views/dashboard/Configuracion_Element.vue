@@ -1,10 +1,27 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import axios from '@/utils/axios';
 import { useRouter } from 'vue-router';
 
 const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 const router = useRouter();
+
+// Sistema de notificaciones toast
+const toasts = ref([]);
+let toastIdCounter = 0;
+
+const showToast = (message, type = 'info') => {
+  const id = toastIdCounter++;
+  toasts.value.push({ id, message, type });
+  
+  setTimeout(() => {
+    toasts.value = toasts.value.filter(t => t.id !== id);
+  }, 5000);
+};
+
+const removeToast = (id) => {
+  toasts.value = toasts.value.filter(t => t.id !== id);
+};
 
 // Solo admin puede acceder a configuración
 const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -17,10 +34,7 @@ const saving = ref(false);
 
 // Configuración general
 const config = ref({
-  requireConfirmation: false,
-  workersCanCreateServices: false,
   canAcceptAppointments: true,
-  canModifyAppointments: true,
   openingTime: '09:00',
   closingTime: '18:00',
   serviceIntervalMinutes: 30
@@ -38,6 +52,309 @@ const weekDays = [
 ];
 
 const schedules = ref([]);
+
+// Modo de configuración de horarios
+const scheduleMode = ref('quick'); // 'quick' o 'manual'
+
+// Estado de advertencia de solapamiento
+const overlappingDays = ref([]);
+
+// Aplicación rápida de horarios - ahora soporta múltiples rangos y turnos
+const quickScheduleRanges = ref([
+  {
+    id: 1,
+    fromDay: 1, // Lunes
+    toDay: 5,   // Viernes
+    shifts: [
+      { id: 1, openingTime: '09:00', closingTime: '18:00' }
+    ]
+  }
+]);
+
+let nextRangeId = 2;
+let nextShiftId = 2;
+
+// Watch para actualizar solapamientos automáticamente
+watch(quickScheduleRanges, () => {
+  overlappingDays.value = detectOverlappingDays();
+}, { deep: true });
+
+// Añadir nuevo rango de días
+const addDayRange = () => {
+  quickScheduleRanges.value.push({
+    id: nextRangeId++,
+    fromDay: 6, // Sábado por defecto
+    toDay: 0,   // Domingo
+    shifts: [
+      { id: nextShiftId++, openingTime: '10:00', closingTime: '14:00' }
+    ]
+  });
+};
+
+// Eliminar rango de días
+const removeDayRange = (rangeId) => {
+  if (quickScheduleRanges.value.length === 1) {
+    showToast('Debe haber al menos un rango de días', 'warning');
+    return;
+  }
+  quickScheduleRanges.value = quickScheduleRanges.value.filter(r => r.id !== rangeId);
+};
+
+// Añadir turno extra a un rango
+const addShiftToRange = (range) => {
+  if (range.shifts.length >= 3) {
+    showToast('Máximo 3 turnos por día', 'warning');
+    return;
+  }
+  
+  // Calcular hora de inicio basada en el último turno
+  const lastShift = range.shifts[range.shifts.length - 1];
+  const [hours, minutes] = lastShift.closingTime.split(':').map(Number);
+  
+  // Añadir 1 hora de descanso
+  let newOpenHours = hours + 1;
+  let newCloseHours = hours + 5; // 4 horas de turno
+  
+  if (newOpenHours >= 24) newOpenHours = 23;
+  if (newCloseHours >= 24) newCloseHours = 23;
+  
+  range.shifts.push({
+    id: nextShiftId++,
+    openingTime: `${String(newOpenHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`,
+    closingTime: `${String(newCloseHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+  });
+};
+
+// Eliminar turno de un rango
+const removeShiftFromRange = (range, shiftId) => {
+  if (range.shifts.length === 1) {
+    showToast('Debe haber al menos un turno', 'warning');
+    return;
+  }
+  range.shifts = range.shifts.filter(s => s.id !== shiftId);
+};
+
+// Obtener días de un rango
+const getDaysInRange = (fromDay, toDay) => {
+  const days = [];
+  if (fromDay <= toDay) {
+    for (let day = fromDay; day <= toDay; day++) {
+      days.push(day);
+    }
+  } else {
+    // Caso especial: atraviesa la semana (ej: Sábado 6 -> Domingo 0)
+    for (let day = fromDay; day <= 6; day++) {
+      days.push(day);
+    }
+    for (let day = 0; day <= toDay; day++) {
+      days.push(day);
+    }
+  }
+  return days;
+};
+
+// Detectar días que aparecen en múltiples rangos
+const detectOverlappingDays = () => {
+  const dayMap = new Map(); // día -> array de índices de rangos
+  
+  quickScheduleRanges.value.forEach((range, rangeIndex) => {
+    const days = getDaysInRange(range.fromDay, range.toDay);
+    days.forEach(day => {
+      if (!dayMap.has(day)) {
+        dayMap.set(day, []);
+      }
+      dayMap.get(day).push(rangeIndex);
+    });
+  });
+  
+  // Encontrar días que están en múltiples rangos
+  const overlapping = [];
+  dayMap.forEach((rangeIndices, day) => {
+    if (rangeIndices.length > 1) {
+      const dayName = weekDays.find(d => d.id === day)?.name;
+      const rangeNumbers = rangeIndices.map(i => i + 1).join(', ');
+      overlapping.push({ day, dayName, ranges: rangeNumbers });
+    }
+  });
+  
+  overlappingDays.value = overlapping;
+  return overlapping;
+};
+
+// Validar que los turnos no se solapen
+const validateShifts = (shifts) => {
+  for (let i = 0; i < shifts.length; i++) {
+    for (let j = i + 1; j < shifts.length; j++) {
+      const shift1 = shifts[i];
+      const shift2 = shifts[j];
+      
+      // Convertir a minutos para comparar
+      const [h1Start, m1Start] = shift1.openingTime.split(':').map(Number);
+      const [h1End, m1End] = shift1.closingTime.split(':').map(Number);
+      const [h2Start, m2Start] = shift2.openingTime.split(':').map(Number);
+      const [h2End, m2End] = shift2.closingTime.split(':').map(Number);
+      
+      const start1 = h1Start * 60 + m1Start;
+      const end1 = h1End * 60 + m1End;
+      const start2 = h2Start * 60 + m2Start;
+      const end2 = h2End * 60 + m2End;
+      
+      // Verificar solapamiento
+      if ((start1 < end2 && end1 > start2) || (start2 < end1 && end2 > start1)) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
+// Modal de confirmación
+const showConfirmModal = ref(false);
+const confirmModalData = ref({ title: '', message: '', onConfirm: null });
+
+const confirm = (title, message) => {
+  return new Promise((resolve) => {
+    confirmModalData.value = {
+      title,
+      message,
+      onConfirm: () => {
+        showConfirmModal.value = false;
+        resolve(true);
+      },
+      onCancel: () => {
+        showConfirmModal.value = false;
+        resolve(false);
+      }
+    };
+    showConfirmModal.value = true;
+  });
+};
+
+// Aplicar horario rápido a múltiples días
+const applyQuickSchedule = async () => {
+  try {
+    // Validar todos los rangos
+    for (const range of quickScheduleRanges.value) {
+      if (range.fromDay > range.toDay && !(range.fromDay === 6 && range.toDay === 0)) {
+        // Permitir Sábado (6) a Domingo (0)
+        if (!(range.fromDay > range.toDay)) {
+          showToast('Revisa los rangos de días: el día de inicio debe ser anterior o igual al día final', 'error');
+          return;
+        }
+      }
+      
+      // Validar que los turnos no se solapen DENTRO del mismo rango
+      if (!validateShifts(range.shifts)) {
+        showToast('Los horarios de los turnos se solapan dentro de un rango. Por favor, ajústalos.', 'error');
+        return;
+      }
+      
+      // Validar que cada turno tenga cierre después de apertura
+      for (const shift of range.shifts) {
+        if (shift.openingTime >= shift.closingTime) {
+          showToast('La hora de cierre debe ser posterior a la hora de apertura', 'error');
+          return;
+        }
+      }
+    }
+    
+    // Detectar días solapados
+    const overlapping = detectOverlappingDays();
+    
+    // Si hay solapamientos, no permitir continuar
+    if (overlapping.length > 0) {
+      const daysText = overlapping.map(o => o.dayName).join(', ');
+      showToast(`No se pueden aplicar los horarios. Días solapados: ${daysText}. Modifica los rangos para continuar.`, 'error');
+      return;
+    }
+    
+    const summary = quickScheduleRanges.value.map((range, idx) => {
+      const fromDayName = weekDays.find(d => d.id === range.fromDay)?.name;
+      const toDayName = weekDays.find(d => d.id === range.toDay)?.name;
+      const shiftsText = range.shifts.map(s => `${s.openingTime}-${s.closingTime}`).join(', ');
+      return `Rango ${idx + 1}: ${fromDayName} a ${toDayName} → ${shiftsText}`;
+    }).join('\n');
+    
+    const confirmed = await confirm('¿Aplicar estos horarios?', summary);
+    if (!confirmed) return;
+    
+    const token = localStorage.getItem('token');
+    
+    // Crear mapa de día -> array de turnos (combinando todos los rangos)
+    const dayShiftsMap = new Map();
+    
+    for (const range of quickScheduleRanges.value) {
+      const daysInRange = getDaysInRange(range.fromDay, range.toDay);
+      
+      for (const dayOfWeek of daysInRange) {
+        if (!dayShiftsMap.has(dayOfWeek)) {
+          dayShiftsMap.set(dayOfWeek, []);
+        }
+        
+        // Añadir todos los turnos de este rango a este día
+        range.shifts.forEach(shift => {
+          dayShiftsMap.get(dayOfWeek).push({
+            openingTime: shift.openingTime,
+            closingTime: shift.closingTime
+          });
+        });
+      }
+    }
+    
+    // Eliminar horarios existentes de todos los días afectados
+    const allDaysToApply = Array.from(dayShiftsMap.keys());
+    for (const dayOfWeek of allDaysToApply) {
+      const existingSchedules = getSchedulesForDay(dayOfWeek);
+      for (const schedule of existingSchedules) {
+        await axios.delete(`${API_URL}/config/schedules/${schedule.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+    }
+    
+    // Crear nuevos horarios para cada día
+    for (const [dayOfWeek, shifts] of dayShiftsMap.entries()) {
+      // Ordenar turnos por hora de apertura
+      const sortedShifts = [...shifts].sort((a, b) => 
+        a.openingTime.localeCompare(b.openingTime)
+      );
+      
+      // Eliminar duplicados exactos (misma hora de apertura y cierre)
+      const uniqueShifts = [];
+      const seen = new Set();
+      
+      for (const shift of sortedShifts) {
+        const key = `${shift.openingTime}-${shift.closingTime}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueShifts.push(shift);
+        }
+      }
+      
+      // Crear cada turno único
+      for (const shift of uniqueShifts) {
+        const response = await axios.post(`${API_URL}/config/schedules`, {
+          dayOfWeek,
+          openingTime: shift.openingTime,
+          closingTime: shift.closingTime,
+          isClosed: false
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        schedules.value.push(response.data);
+      }
+    }
+    
+    // Recargar configuración para asegurar consistencia
+    await fetchConfig();
+    
+    console.log('✅ Horarios aplicados masivamente (solapamientos combinados)');
+    showToast('Horarios aplicados correctamente', 'success');
+  } catch (error) {
+    console.error('❌ Error aplicando horarios:', error);
+    showToast('Error al aplicar los horarios', 'error');
+  }
+};
 
 // Bloqueos
 const blocks = ref([]);
@@ -89,10 +406,9 @@ const saveConfig = async () => {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    alert('✅ Configuración guardada correctamente');
+    console.log('✅ Configuración guardada');
   } catch (error) {
     console.error('❌ Error guardando configuración:', error);
-    alert('Error al guardar la configuración');
   } finally {
     saving.value = false;
   }
@@ -115,24 +431,36 @@ const addScheduleSlot = async (dayOfWeek) => {
     const token = localStorage.getItem('token');
     const existingSchedules = getSchedulesForDay(dayOfWeek);
     
-    // Si hay horarios existentes, el nuevo debe empezar después del último
     let newOpeningTime = config.value.openingTime;
     let newClosingTime = config.value.closingTime;
     
     if (existingSchedules.length > 0) {
-      // Ordenar por hora de cierre y tomar el último
+      // Ordenar por hora de cierre para encontrar el último horario
       const sortedSchedules = [...existingSchedules].sort((a, b) => 
         a.closingTime.localeCompare(b.closingTime)
       );
       const lastSchedule = sortedSchedules[sortedSchedules.length - 1];
       
-      // El nuevo horario empieza donde termina el último
+      // El nuevo horario DEBE empezar exactamente donde termina el último
       newOpeningTime = lastSchedule.closingTime;
       
       // Calcular hora de cierre (2 horas después por defecto)
       const [hours, minutes] = newOpeningTime.split(':').map(Number);
-      const closingHours = hours + 2;
-      newClosingTime = `${String(closingHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      let closingHours = hours + 2;
+      
+      // Validar que no exceda las 23:59
+      if (closingHours >= 24) {
+        closingHours = 23;
+        newClosingTime = '23:59';
+      } else {
+        newClosingTime = `${String(closingHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      }
+      
+      // Validar que el nuevo horario no sea igual o menor que el de apertura
+      if (newClosingTime <= newOpeningTime) {
+        alert('No se puede añadir más horarios. El último horario ya termina muy tarde.');
+        return;
+      }
     }
     
     const response = await axios.post(`${API_URL}/config/schedules`, {
@@ -145,10 +473,12 @@ const addScheduleSlot = async (dayOfWeek) => {
     });
     
     schedules.value.push(response.data);
-    alert('✅ Horario añadido correctamente');
+    console.log('✅ Horario añadido');
   } catch (error) {
     console.error('❌ Error añadiendo horario:', error);
-    alert('Error al añadir el horario');
+    if (error.response?.data?.error) {
+      alert(error.response.data.error);
+    }
   }
 };
 
@@ -165,10 +495,9 @@ const updateScheduleSlot = async (schedule) => {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    alert('✅ Horario actualizado correctamente');
+    console.log('✅ Horario actualizado');
   } catch (error) {
     console.error('❌ Error actualizando horario:', error);
-    alert('Error al actualizar el horario');
   }
 };
 
@@ -184,10 +513,9 @@ const deleteScheduleSlot = async (scheduleId) => {
     });
     
     schedules.value = schedules.value.filter(s => s.id !== scheduleId);
-    alert('✅ Horario eliminado correctamente');
+    console.log('✅ Horario eliminado');
   } catch (error) {
     console.error('❌ Error eliminando horario:', error);
-    alert('Error al eliminar el horario');
   }
 };
 
@@ -215,10 +543,9 @@ const toggleDayClosed = async (dayOfWeek) => {
       schedules.value.push(response.data);
     }
     
-    alert('✅ Estado actualizado correctamente');
+    console.log('✅ Estado actualizado');
   } catch (error) {
     console.error('❌ Error actualizando estado:', error);
-    alert('Error al actualizar el estado');
   }
 };
 
@@ -237,7 +564,7 @@ const openBlockModal = () => {
 const createBlock = async () => {
   try {
     if (!newBlock.value.date) {
-      alert('Por favor selecciona una fecha');
+      showToast('Por favor selecciona una fecha', 'warning');
       return;
     }
     
@@ -249,16 +576,16 @@ const createBlock = async () => {
     
     blocks.value.push(response.data);
     showBlockModal.value = false;
-    alert('✅ Bloqueo creado correctamente');
+    console.log('✅ Bloqueo creado');
   } catch (error) {
     console.error('❌ Error creando bloqueo:', error);
-    alert('Error al crear el bloqueo');
   }
 };
 
 // Eliminar bloqueo
 const deleteBlock = async (blockId) => {
-  if (!confirm('¿Estás seguro de eliminar este bloqueo?')) return;
+  const confirmed = await confirm('¿Eliminar bloqueo?', '¿Estás seguro de eliminar este bloqueo?');
+  if (!confirmed) return;
   
   try {
     const token = localStorage.getItem('token');
@@ -268,10 +595,9 @@ const deleteBlock = async (blockId) => {
     });
     
     blocks.value = blocks.value.filter(b => b.id !== blockId);
-    alert('✅ Bloqueo eliminado correctamente');
+    console.log('✅ Bloqueo eliminado');
   } catch (error) {
     console.error('❌ Error eliminando bloqueo:', error);
-    alert('Error al eliminar el bloqueo');
   }
 };
 
@@ -331,34 +657,10 @@ onMounted(() => {
         <div class="config-grid">
           <div class="config-item">
             <label class="checkbox-label">
-              <input type="checkbox" v-model="config.requireConfirmation" />
-              <span>Requerir confirmación de citas</span>
-            </label>
-            <p class="help-text">Los clientes deben confirmar sus citas antes de que sean válidas</p>
-          </div>
-          
-          <div class="config-item">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="config.workersCanCreateServices" />
-              <span>Trabajadores pueden crear servicios</span>
-            </label>
-            <p class="help-text">Permite a los trabajadores añadir nuevos servicios</p>
-          </div>
-          
-          <div class="config-item">
-            <label class="checkbox-label">
               <input type="checkbox" v-model="config.canAcceptAppointments" />
               <span>Aceptar citas online</span>
             </label>
-            <p class="help-text">Los clientes pueden reservar citas desde la web pública</p>
-          </div>
-          
-          <div class="config-item">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="config.canModifyAppointments" />
-              <span>Clientes pueden modificar citas</span>
-            </label>
-            <p class="help-text">Permite a los clientes cancelar o reprogramar citas</p>
+            <p class="help-text">Si está activado, los clientes pueden reservar citas desde tu página pública. Si está desactivado, la página solo mostrará información del salón.</p>
           </div>
         </div>
 
@@ -379,11 +681,143 @@ onMounted(() => {
             </svg>
             Horarios por Día de la Semana
           </h2>
-          <p class="subtitle-small">Configura horarios específicos para cada día. Puedes añadir turnos partidos.</p>
+        </div>
+        
+        <!-- Selector de modo -->
+        <div class="mode-selector">
+          <p class="mode-selector-label">Elige cómo quieres configurar los horarios:</p>
+          <div class="mode-options">
+            <label class="mode-option" :class="{ 'active': scheduleMode === 'quick' }">
+              <input type="radio" v-model="scheduleMode" value="quick" />
+              <div class="mode-content">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
+                <div>
+                  <span class="mode-title">Modo Rápido</span>
+                  <span class="mode-description">Aplica horarios a varios días a la vez</span>
+                </div>
+              </div>
+            </label>
+            
+            <label class="mode-option" :class="{ 'active': scheduleMode === 'manual' }">
+              <input type="radio" v-model="scheduleMode" value="manual" />
+              <div class="mode-content">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                </svg>
+                <div>
+                  <span class="mode-title">Modo Manual</span>
+                  <span class="mode-description">Configura cada día individualmente</span>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Aplicación rápida de horarios -->
+        <div v-if="scheduleMode === 'quick'" class="quick-schedule-box">
+          <div class="quick-schedule-header">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-purple-600">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+            <h3>Aplicación Rápida de Horarios</h3>
+          </div>
+          <p class="quick-schedule-subtitle">Configura horarios por rangos de días. Añade turnos para horarios partidos (mañana y tarde).</p>
+          
+          <!-- Advertencia de días solapados -->
+          <div v-if="overlappingDays.length > 0" class="overlap-warning">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <span>Horarios solapados</span>
+          </div>
+          
+          <!-- Configuraciones de horarios -->
+          <div class="quick-configs-container">
+            <div v-for="(range, rangeIndex) in quickScheduleRanges" :key="range.id" class="quick-config-row">
+              <!-- Selector de días -->
+              <div class="config-days-section">
+                <span class="config-label">De</span>
+                <select v-model.number="range.fromDay" class="quick-select-inline">
+                  <option v-for="day in weekDays" :key="day.id" :value="day.id">{{ day.name }}</option>
+                </select>
+                
+                <span class="config-label">a</span>
+                <select v-model.number="range.toDay" class="quick-select-inline">
+                  <option v-for="day in weekDays" :key="day.id" :value="day.id">{{ day.name }}</option>
+                </select>
+              </div>
+              
+              <!-- Flecha separadora -->
+              <div class="config-arrow">→</div>
+              
+              <!-- Turnos horizontales -->
+              <div class="config-shifts-section">
+                <div v-for="(shift, shiftIndex) in range.shifts" :key="shift.id" class="config-shift-inline">
+                  <span class="shift-separator" v-if="shiftIndex > 0">+</span>
+                  
+                  <div class="shift-time-group">
+                    <span class="time-label">De</span>
+                    <input type="time" v-model="shift.openingTime" class="time-input-inline" />
+                    <span class="time-label">a</span>
+                    <input type="time" v-model="shift.closingTime" class="time-input-inline" />
+                  </div>
+                  
+                  <button 
+                    v-if="range.shifts.length > 1"
+                    @click="removeShiftFromRange(range, shift.id)"
+                    class="btn-remove-shift-inline"
+                    title="Eliminar turno"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <button @click="addShiftToRange(range)" class="btn-add-turno">
+                  + Turno
+                </button>
+              </div>
+              
+              <!-- Botón eliminar configuración -->
+              <button 
+                v-if="quickScheduleRanges.length > 1"
+                @click="removeDayRange(range.id)" 
+                class="btn-remove-config"
+                title="Eliminar configuración"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Botones de acción -->
+          <div class="quick-actions-bottom">
+            <button @click="addDayRange" class="btn-add-config">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Añadir otra configuración
+            </button>
+            
+            <button @click="applyQuickSchedule" class="btn-apply-all">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Aplicar todos los horarios
+            </button>
+          </div>
         </div>
         
         <div class="schedules-table">
-          <div v-for="day in weekDays" :key="day.id" class="schedule-row">
+          <div v-if="scheduleMode === 'manual'">
+            <p class="subtitle-small" style="margin-bottom: 1rem;">Configura horarios específicos para cada día. Puedes añadir turnos partidos.</p>
+          </div>
+          <div v-if="scheduleMode === 'manual'" v-for="day in weekDays" :key="day.id" class="schedule-row">
             <!-- Nombre del día -->
             <div class="day-name-col">{{ day.name }}</div>
             
@@ -554,6 +988,64 @@ onMounted(() => {
             Crear Bloqueo
           </button>
         </div>
+      </div>
+    </div>
+    
+    <!-- MODAL DE CONFIRMACIÓN -->
+    <div v-if="showConfirmModal" class="modal-overlay" @click="confirmModalData.onCancel">
+      <div class="modal-content confirm-modal" @click.stop>
+        <div class="modal-header">
+          <h2>{{ confirmModalData.title }}</h2>
+          <button @click="confirmModalData.onCancel" class="close-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <p class="confirm-message">{{ confirmModalData.message }}</p>
+          
+          <div class="confirm-actions">
+            <button @click="confirmModalData.onCancel" class="btn-cancel">
+              Cancelar
+            </button>
+            <button @click="confirmModalData.onConfirm" class="btn-confirm">
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- SISTEMA DE NOTIFICACIONES TOAST -->
+    <div class="toast-container">
+      <div 
+        v-for="toast in toasts" 
+        :key="toast.id" 
+        :class="['toast', `toast-${toast.type}`]"
+        @click="removeToast(toast.id)"
+      >
+        <div class="toast-icon">
+          <svg v-if="toast.type === 'success'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <svg v-else-if="toast.type === 'error'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <svg v-else-if="toast.type === 'warning'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+          </svg>
+        </div>
+        <p class="toast-message">{{ toast.message }}</p>
+        <button @click.stop="removeToast(toast.id)" class="toast-close">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -921,6 +1413,353 @@ onMounted(() => {
   font-size: 0.875rem;
 }
 
+/* Selector de modo */
+.mode-selector {
+  background: white;
+  border: 2px solid #e0e7ff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.mode-selector-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4338ca;
+  margin: 0 0 1rem 0;
+}
+
+.mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.mode-option {
+  position: relative;
+  cursor: pointer;
+  border: 2px solid #c7d2fe;
+  border-radius: 10px;
+  padding: 1rem;
+  transition: all 0.2s;
+  background: white;
+}
+
+.mode-option:hover {
+  border-color: #6366f1;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+}
+
+.mode-option.active {
+  border-color: #6366f1;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f3f4ff 100%);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.mode-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.mode-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mode-content svg {
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.mode-option.active .mode-content svg {
+  color: #4f46e5;
+}
+
+.mode-content > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mode-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.mode-option.active .mode-title {
+  color: #4338ca;
+}
+
+.mode-description {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.mode-option.active .mode-description {
+  color: #6366f1;
+}
+
+/* Aplicación rápida de horarios */
+.quick-schedule-box {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f3f4ff 100%);
+  border: 2px solid #e0e7ff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.quick-schedule-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.quick-schedule-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4338ca;
+}
+
+.quick-schedule-subtitle {
+  color: #6366f1;
+  font-size: 0.875rem;
+  margin: 0 0 1.5rem 0;
+}
+
+/* Contenedor de configuraciones */
+.quick-configs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Cada fila de configuración */
+.quick-config-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border: 2px solid #c7d2fe;
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+/* Sección de días */
+.config-days-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 300px;
+}
+
+.config-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6366f1;
+}
+
+.quick-select-inline {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #c7d2fe;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  background: white;
+  transition: all 0.2s;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 110px;
+}
+
+.quick-select-inline:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.config-arrow {
+  font-size: 1.5rem;
+  color: #6366f1;
+  font-weight: 700;
+}
+
+/* Sección de turnos (horizontal) */
+.config-shifts-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.config-shift-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shift-separator {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #6366f1;
+  margin: 0 0.25rem;
+}
+
+.shift-time-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e0e7ff;
+  border-radius: 8px;
+}
+
+.time-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.time-input-inline {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  background: white;
+  transition: all 0.2s;
+  font-family: inherit;
+  width: 90px;
+}
+
+.time-input-inline:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.btn-remove-shift-inline {
+  padding: 0.25rem;
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove-shift-inline:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-add-turno {
+  padding: 0.375rem 0.75rem;
+  background: transparent;
+  color: #6366f1;
+  border: 1px dashed #6366f1;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-add-turno:hover {
+  background: #eef2ff;
+  border-style: solid;
+}
+
+.btn-remove-config {
+  padding: 0.375rem;
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.btn-remove-config:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Botones de acción inferiores */
+.quick-actions-bottom {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+  border-top: 2px solid #e0e7ff;
+}
+
+.btn-add-config {
+  padding: 0.625rem 1.25rem;
+  background: white;
+  color: #6366f1;
+  border: 2px solid #6366f1;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-add-config:hover {
+  background: #6366f1;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-apply-all {
+  padding: 0.625rem 1.5rem;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  margin-left: auto;
+}
+
+.btn-apply-all:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.btn-apply-all:active {
+  transform: translateY(0);
+}
+
 /* Bloqueos */
 .btn-add {
   padding: 0.75rem 1.5rem;
@@ -1125,10 +1964,195 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 
-@media (max-width: 768px) {
-  .config-container {
-    padding: 1rem;
+/* Advertencia de solapamiento */
+.overlap-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  color: #92400e;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.overlap-warning svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+/* Sistema de notificaciones toast */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 400px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border-left: 4px solid;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
   }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast:hover {
+  transform: translateX(-5px);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+}
+
+.toast-success {
+  border-left-color: #10b981;
+}
+
+.toast-error {
+  border-left-color: #ef4444;
+}
+
+.toast-warning {
+  border-left-color: #f59e0b;
+}
+
+.toast-info {
+  border-left-color: #3b82f6;
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast-success .toast-icon {
+  color: #10b981;
+}
+
+.toast-error .toast-icon {
+  color: #ef4444;
+}
+
+.toast-warning .toast-icon {
+  color: #f59e0b;
+}
+
+.toast-info .toast-icon {
+  color: #3b82f6;
+}
+
+.toast-message {
+  flex: 1;
+  margin: 0;
+  color: #1e293b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.toast-close:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+/* Modal de confirmación */
+.confirm-modal {
+  max-width: 500px;
+}
+
+.confirm-message {
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 1.5rem 0;
+  white-space: pre-line;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.btn-cancel {
+  padding: 0.75rem 1.5rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.btn-confirm {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+@media (max-width: 768px) {
+  .toast-container {
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+
   
   .schedule-row {
     grid-template-columns: 1fr;

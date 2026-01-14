@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import Landing from '../views/Landing_Page.vue';
 import Login from '../views/Login_Page.vue';
 import Register from '../views/Register_Page.vue';
 import Dashboard from '../views/Dashboard_Page.vue';
 import ResetPassword from '../views/ResetPassword_Page.vue';
+import TechInfo from '../views/TechInfo_Page.vue';
 
 // Páginas hijas de Dashboard
 import Citas from '../views/dashboard/Citas_Element.vue';
@@ -19,7 +21,7 @@ import Resume from '../views/dashboard/Resume_Element.vue';
 import SalonPublicPage from '../views/SalonPublicPage.vue';
 
 const routes = [
-  { path: '', redirect: '/login' },
+  { path: '/', name: 'Landing', component: Landing },
   { path: '/login', name: 'Login', component: Login, meta: { guest: true } },
   {
     path: '/register',
@@ -32,6 +34,11 @@ const routes = [
     name: 'ResetPassword',
     component: ResetPassword,
     meta: { guest: true },
+  },
+  {
+    path: '/tech-info',
+    name: 'TechInfo',
+    component: TechInfo,
   },
 
   // Ruta pública dinámica por slug

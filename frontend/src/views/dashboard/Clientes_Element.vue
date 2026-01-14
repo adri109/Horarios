@@ -65,7 +65,6 @@ const fetchClients = async () => {
     
     if (!token) {
       console.error('❌ No hay token de autenticación');
-      alert('No estás autenticado. Por favor, inicia sesión.');
       return;
     }
     
@@ -83,14 +82,13 @@ const fetchClients = async () => {
     
     // Si el token es inválido, redirigir al login
     if (error.response?.status === 403 || error.response?.status === 401) {
-      alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+      console.error('❌ Sesión expirada');
       localStorage.removeItem('token');
       window.location.href = '/login';
       return;
     }
     
-    const errorMsg = error.response?.data?.error || 'Error al cargar los clientes';
-    alert(`Error: ${errorMsg}`);
+    console.error('Error al cargar clientes');
   } finally {
     loading.value = false;
   }

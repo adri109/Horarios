@@ -67,6 +67,54 @@
           </div>
         </div>
 
+        <!-- Horarios -->
+        <div class="bg-white rounded-2xl shadow-xl p-4 md:p-6">
+          <h2 class="text-lg md:text-xl font-bold mb-4 flex items-center text-gray-800">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2 text-purple-600">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Horarios
+          </h2>
+          
+          <div v-if="!salon.schedules || salon.schedules.length === 0" class="text-center py-4">
+            <p class="text-gray-400 text-sm">Horarios no configurados</p>
+          </div>
+          
+          <div v-else class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+            <div
+              v-for="schedule in getSortedSchedules(salon.schedules)"
+              :key="schedule.id"
+              :class="[
+                'p-2 rounded-lg border transition-all text-center',
+                schedule.isClosed 
+                  ? 'bg-gray-50 border-gray-200' 
+                  : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200'
+              ]"
+            >
+              <div :class="[
+                'w-7 h-7 rounded-md flex items-center justify-center mx-auto mb-1',
+                schedule.isClosed ? 'bg-gray-200' : 'bg-gradient-to-br from-purple-600 to-pink-600'
+              ]">
+                <span :class="[
+                  'text-sm font-bold',
+                  schedule.isClosed ? 'text-gray-500' : 'text-white'
+                ]">
+                  {{ getDayInitial(schedule.dayOfWeek) }}
+                </span>
+              </div>
+              <p class="text-xs font-semibold text-gray-700 mb-0.5">
+                {{ getDayName(schedule.dayOfWeek) }}
+              </p>
+              <div v-if="schedule.isClosed" class="text-gray-400 text-xs">
+                Cerrado
+              </div>
+              <div v-else class="text-purple-700 text-xs font-medium leading-tight">
+                {{ schedule.opening }}<br>{{ schedule.closing }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Servicios -->
         <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
           <h2 class="text-2xl md:text-3xl font-bold mb-6 flex items-center text-gray-800">
@@ -637,11 +685,6 @@ async function confirmAppointment() {
 
   } catch (err) {
     console.error('❌ Error creando cita:', err);
-    if (err.response) {
-      alert(err.response?.data?.error || 'Error al crear la cita');
-    } else {
-      alert('Error al crear la cita');
-    }
   } finally {
     savingAppointment.value = false;
   }
@@ -671,6 +714,27 @@ onMounted(() => {
   checkAuthentication(); // Verificar autenticación primero
   fetchSalon();
 });
+
+// Funciones auxiliares para formatear días de la semana
+function getDayName(dayOfWeek) {
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  return days[dayOfWeek];
+}
+
+function getDayInitial(dayOfWeek) {
+  const initials = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+  return initials[dayOfWeek];
+}
+
+function getSortedSchedules(schedules) {
+  if (!schedules) return [];
+  // Ordenar de lunes (1) a domingo (0)
+  return [...schedules].sort((a, b) => {
+    const orderA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
+    const orderB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
+    return orderA - orderB;
+  });
+}
 
 // Función para agrupar slots por turnos (ahora con objetos que tienen estado)
 function groupSlotsByShifts(slots, schedules) {

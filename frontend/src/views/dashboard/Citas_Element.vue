@@ -530,7 +530,7 @@ const fetchCitas = async () => {
     const token = localStorage.getItem('token');
     
     if (!token) {
-      alert('No estás autenticado. Por favor, inicia sesión.');
+      console.error('❌ No autenticado');
       return;
     }
     
@@ -542,7 +542,6 @@ const fetchCitas = async () => {
     console.log('✅ Citas cargadas:', res.data.length);
   } catch (error) {
     console.error('❌ Error cargando citas:', error);
-    alert('Error al cargar las citas');
   } finally {
     loading.value = false;
   }
@@ -568,7 +567,6 @@ const updateStatus = async (citaId, newStatus) => {
     console.log('✅ Estado actualizado');
   } catch (error) {
     console.error('❌ Error actualizando estado:', error);
-    alert('Error al actualizar el estado de la cita');
   }
 };
 

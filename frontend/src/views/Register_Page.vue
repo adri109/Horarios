@@ -499,19 +499,14 @@ async function handleSubmit() {
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(userData));
 
-    alert('✅ ¡Cuenta creada con éxito!');
+    console.log('✅ Cuenta creada con éxito');
     router.push('/dashboard');
   } catch (err) {
     console.error('❌ Error completo:', err);
     if (err.response) {
-      const errorMessage =
-        err.response?.data?.error ||
-        err.response?.data?.details ||
-        'Error en el registro';
       console.error('❌ Error del servidor:', err.response?.data);
-      alert(`❌ ${errorMessage}`);
     } else {
-      alert('❌ Error en el registro: ' + err.message);
+      console.error('❌ Error en el registro:', err.message);
     }
   } finally {
     isSubmitting.value = false;

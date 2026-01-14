@@ -71,10 +71,7 @@ export const updateConfig = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
     const {
-      requireConfirmation,
-      workersCanCreateServices,
       canAcceptAppointments,
-      canModifyAppointments,
       openingTime,
       closingTime,
       serviceIntervalMinutes
@@ -96,20 +93,14 @@ export const updateConfig = async (req: Request, res: Response) => {
     const config = await prisma.config.upsert({
       where: { salonId: salon.id },
       update: {
-        requireConfirmation,
-        workersCanCreateServices,
         canAcceptAppointments,
-        canModifyAppointments,
         openingTime,
         closingTime,
         serviceIntervalMinutes
       },
       create: {
         salonId: salon.id,
-        requireConfirmation,
-        workersCanCreateServices,
         canAcceptAppointments,
-        canModifyAppointments,
         openingTime,
         closingTime,
         serviceIntervalMinutes
@@ -144,6 +135,36 @@ export const createSchedule = async (req: Request, res: Response) => {
 
     if (dayOfWeek < 0 || dayOfWeek > 6) {
       return res.status(400).json({ error: 'El día de la semana debe estar entre 0 (domingo) y 6 (sábado)' });
+    }
+
+    // Validar que la hora de cierre sea posterior a la de apertura
+    if (openingTime >= closingTime && !isClosed) {
+      return res.status(400).json({ error: 'La hora de cierre debe ser posterior a la hora de apertura' });
+    }
+
+    // Validar que no se solape con horarios existentes del mismo día
+    if (!isClosed) {
+      const existingSchedules = await prisma.salonSchedule.findMany({
+        where: {
+          salonId: salon.id,
+          dayOfWeek,
+          isClosed: false
+        }
+      });
+
+      // Verificar solapamientos
+      for (const schedule of existingSchedules) {
+        // Solapamiento si el nuevo horario empieza antes de que termine uno existente Y termina después de que empiece
+        const hasOverlap = (
+          (openingTime < schedule.closingTime && closingTime > schedule.openingTime)
+        );
+
+        if (hasOverlap) {
+          return res.status(400).json({ 
+            error: `El horario se solapa con un horario existente (${schedule.openingTime} - ${schedule.closingTime}). El nuevo horario debe comenzar como mínimo a las ${schedule.closingTime}` 
+          });
+        }
+      }
     }
 
     const schedule = await prisma.salonSchedule.create({
@@ -189,6 +210,36 @@ export const updateSchedule = async (req: Request, res: Response) => {
 
     if (!schedule || schedule.salonId !== salon.id) {
       return res.status(404).json({ error: 'Horario no encontrado' });
+    }
+
+    // Validar que la hora de cierre sea posterior a la de apertura
+    if (openingTime >= closingTime && !isClosed) {
+      return res.status(400).json({ error: 'La hora de cierre debe ser posterior a la hora de apertura' });
+    }
+
+    // Validar que no se solape con otros horarios del mismo día (excluyendo el actual)
+    if (!isClosed) {
+      const existingSchedules = await prisma.salonSchedule.findMany({
+        where: {
+          salonId: salon.id,
+          dayOfWeek: schedule.dayOfWeek,
+          isClosed: false,
+          id: { not: parseInt(id) } // Excluir el horario que estamos actualizando
+        }
+      });
+
+      // Verificar solapamientos
+      for (const existingSchedule of existingSchedules) {
+        const hasOverlap = (
+          (openingTime < existingSchedule.closingTime && closingTime > existingSchedule.openingTime)
+        );
+
+        if (hasOverlap) {
+          return res.status(400).json({ 
+            error: `El horario se solapa con otro horario existente (${existingSchedule.openingTime} - ${existingSchedule.closingTime})` 
+          });
+        }
+      }
     }
 
     const updated = await prisma.salonSchedule.update({

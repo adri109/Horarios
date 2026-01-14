@@ -113,10 +113,10 @@ const formatRelativeTime = (date) => {
 // Obtener icono según tipo
 const getNotificationIcon = (type) => {
   switch(type) {
-    case 'REMINDER': return '⏰';
-    case 'CANCELLATION': return '❌';
-    case 'PROMOTION': return '🎉';
-    default: return '📢';
+    case 'REMINDER': return 'clock';
+    case 'CANCELLATION': return 'x-circle';
+    case 'PROMOTION': return 'gift';
+    default: return 'bell';
   }
 };
 
@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  stroke-width="2"
+                  stroke-width="1.5"
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                 ></path>
               </svg>
@@ -258,7 +258,14 @@ onBeforeUnmount(() => {
                   class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
                   :class="{ 'bg-blue-50': !notification.read }"
                 >
-                  <span class="text-2xl">{{ getNotificationIcon(notification.type) }}</span>
+                  <div class="flex-shrink-0 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-600">
+                      <path v-if="getNotificationIcon(notification.type) === 'clock'" stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path v-else-if="getNotificationIcon(notification.type) === 'x-circle'" stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path v-else-if="getNotificationIcon(notification.type) === 'gift'" stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                      <path v-else stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                    </svg>
+                  </div>
                   <div class="flex-1 min-w-0">
                     <p class="text-sm text-gray-800 line-clamp-2">
                       {{ notification.message }}

@@ -2,3 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevenir selección de texto en elementos de UI */
+* {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Permitir selección solo en inputs, textareas y elementos editables */
+input,
+textarea,
+[contenteditable="true"],
+.selectable {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+

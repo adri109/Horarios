@@ -188,7 +188,6 @@ const fetchServices = async () => {
     
     if (!token) {
       console.error('❌ No hay token de autenticación');
-      alert('No estás autenticado. Por favor, inicia sesión nuevamente.');
       loading.value = false;
       return;
     }
@@ -209,7 +208,6 @@ const fetchServices = async () => {
     if (error.response) {
       console.error('❌ Respuesta del servidor:', error.response?.data);
     }
-    alert('No se pudieron cargar los servicios');
   } finally {
     loading.value = false;
   }
@@ -267,7 +265,6 @@ const saveService = async () => {
     if (error.response) {
       console.error('❌ Respuesta del servidor:', error.response?.data);
     }
-    alert('Error guardando el servicio');
   }
 };
 
@@ -296,7 +293,6 @@ const deleteService = async (id) => {
     if (error.response) {
       console.error('❌ Respuesta del servidor:', error.response?.data);
     }
-    alert('Error eliminando el servicio');
   }
 };
 

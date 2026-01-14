@@ -78,7 +78,6 @@ const loadClients = async () => {
     clients.value = response.data;
   } catch (error) {
     console.error('Error cargando clientes:', error);
-    alert('Error al cargar clientes');
   } finally {
     loading.value = false;
   }
@@ -169,7 +168,7 @@ const sendCampaign = async () => {
     );
     
     const results = response.data.results;
-    alert(`✅ Campaña enviada!\n\nTotal: ${results.total}\nExitosos: ${results.success}\nFallidos: ${results.failed}`);
+    console.log(`✅ Campaña enviada! Total: ${results.total}, Exitosos: ${results.success}, Fallidos: ${results.failed}`);
     
     // Reset form
     campaignData.value = {
@@ -184,7 +183,6 @@ const sendCampaign = async () => {
     applyTemplate();
   } catch (error) {
     console.error('Error enviando campaña:', error);
-    alert('❌ Error al enviar la campaña. Verifica la consola para más detalles.');
   }
 };
 

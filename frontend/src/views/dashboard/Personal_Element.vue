@@ -487,7 +487,7 @@ const loadWorkers = async () => {
   } catch (error) {
     console.error('Error al cargar trabajadores:', error);
     if (error.response?.status === 403) {
-      alert('Solo los administradores pueden ver el personal');
+      console.error('❌ Acceso denegado: solo administradores');
     }
   } finally {
     loading.value = false;
@@ -608,7 +608,7 @@ const deleteWorker = async () => {
     showDeleteModal.value = false;
     workerToDelete.value = null;
   } catch (error) {
-    alert(error.response?.data?.error || 'Error al eliminar trabajador');
+    console.error('Error al eliminar trabajador:', error);
   } finally {
     formLoading.value = false;
   }

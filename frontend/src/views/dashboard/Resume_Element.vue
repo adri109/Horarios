@@ -16,7 +16,7 @@ const fetchStats = async () => {
     const token = localStorage.getItem('token');
     
     if (!token) {
-      alert('No estás autenticado');
+      console.error('❌ No autenticado');
       window.location.href = '/login';
       return;
     }
@@ -29,7 +29,7 @@ const fetchStats = async () => {
   } catch (error) {
     console.error('Error cargando estadísticas:', error);
     if (error.response?.status === 403 || error.response?.status === 401) {
-      alert('Tu sesión ha expirado');
+      console.error('❌ Sesión expirada');
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
@@ -53,7 +53,6 @@ const updateAppointmentStatus = async (appointmentId, status) => {
     await fetchStats();
   } catch (error) {
     console.error('Error actualizando cita:', error);
-    alert('Error al actualizar la cita');
   }
 };
 

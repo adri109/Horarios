@@ -16,6 +16,7 @@ export const getSalonPublic = async (req: Request, res: Response) => {
       include: {
         services: true,
         config: true, // incluimos config para horarios
+        schedules: true, // incluir horarios semanales
       },
     });
 
