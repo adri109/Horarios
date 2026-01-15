@@ -735,7 +735,7 @@ onMounted(() => {
           
           <!-- Configuraciones de horarios -->
           <div class="quick-configs-container">
-            <div v-for="(range, rangeIndex) in quickScheduleRanges" :key="range.id" class="quick-config-row">
+            <div v-for="range in quickScheduleRanges" :key="range.id" class="quick-config-row">
               <!-- Selector de días -->
               <div class="config-days-section">
                 <span class="config-label">De</span>
@@ -817,7 +817,8 @@ onMounted(() => {
           <div v-if="scheduleMode === 'manual'">
             <p class="subtitle-small" style="margin-bottom: 1rem;">Configura horarios específicos para cada día. Puedes añadir turnos partidos.</p>
           </div>
-          <div v-if="scheduleMode === 'manual'" v-for="day in weekDays" :key="day.id" class="schedule-row">
+          <template v-if="scheduleMode === 'manual'">
+          <div v-for="day in weekDays" :key="day.id" class="schedule-row">
             <!-- Nombre del día -->
             <div class="day-name-col">{{ day.name }}</div>
             
@@ -882,6 +883,7 @@ onMounted(() => {
               </div>
             </div>
           </div>
+          </template>
         </div>
       </section>
 

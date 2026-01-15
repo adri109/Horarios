@@ -87,6 +87,11 @@ model Config {
   openingTime              String   @default("09:00")
   closingTime              String   @default("18:00")
   serviceIntervalMinutes   Int      @default(30)
+  
+  // Personalización del slug público
+  publicPageBackground     String?  @default("bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100")
+  publicPagePrimaryColor   String?  @default("#9333ea")
+  publicPageSecondaryColor String?  @default("#ec4899")
 
   salon   Salon @relation(fields: [salonId], references: [id])
 }

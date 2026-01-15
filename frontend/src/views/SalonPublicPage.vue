@@ -1,7 +1,10 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100">
+  <div class="min-h-screen" :class="customization.background.split(' ')">
     <!-- Header decorativo -->
-    <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-6 shadow-lg">
+    <div 
+      class="text-white py-6 shadow-lg"
+      :style="{ background: `linear-gradient(to right, ${customization.primaryColor}, ${customization.secondaryColor})` }"
+    >
       <div class="max-w-6xl mx-auto px-4">
         <div class="flex justify-between items-center">
           <div>
@@ -46,13 +49,23 @@
       <!-- Contenido -->
       <div v-else class="space-y-6">
         <!-- Información del salón -->
-        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 border-t-4 border-purple-600">
-          <h2 class="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <div 
+          class="bg-white rounded-2xl shadow-xl p-6 md:p-8 border-t-4" 
+          :style="{ borderTopColor: customization.primaryColor }"
+        >
+          <h2 
+            class="text-3xl md:text-4xl font-bold mb-3"
+            :style="{ 
+              background: `linear-gradient(to right, ${customization.primaryColor}, ${customization.secondaryColor})`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }"
+          >
             {{ salon.name }}
           </h2>
           <div class="flex flex-wrap gap-4 text-gray-700">
             <div class="flex items-center">
-              <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 mr-2" :style="{ color: customization.primaryColor }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
               </svg>
@@ -82,34 +95,39 @@
           
           <div v-else class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
             <div
-              v-for="schedule in getSortedSchedules(salon.schedules)"
-              :key="schedule.id"
+              v-for="day in getGroupedSchedulesByDay(salon.schedules)"
+              :key="day.dayOfWeek"
               :class="[
                 'p-2 rounded-lg border transition-all text-center',
-                schedule.isClosed 
-                  ? 'bg-gray-50 border-gray-200' 
+                day.isClosed 
+                  ? 'bg-gray-100 border-gray-300' 
                   : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200'
               ]"
             >
               <div :class="[
                 'w-7 h-7 rounded-md flex items-center justify-center mx-auto mb-1',
-                schedule.isClosed ? 'bg-gray-200' : 'bg-gradient-to-br from-purple-600 to-pink-600'
+                day.isClosed ? 'bg-gray-400' : 'bg-gradient-to-br from-purple-600 to-pink-600'
               ]">
                 <span :class="[
                   'text-sm font-bold',
-                  schedule.isClosed ? 'text-gray-500' : 'text-white'
+                  day.isClosed ? 'text-white' : 'text-white'
                 ]">
-                  {{ getDayInitial(schedule.dayOfWeek) }}
+                  {{ getDayInitial(day.dayOfWeek) }}
                 </span>
               </div>
-              <p class="text-xs font-semibold text-gray-700 mb-0.5">
-                {{ getDayName(schedule.dayOfWeek) }}
+              <p :class="[
+                'text-xs font-semibold mb-0.5',
+                day.isClosed ? 'text-gray-500' : 'text-gray-700'
+              ]">
+                {{ getDayName(day.dayOfWeek) }}
               </p>
-              <div v-if="schedule.isClosed" class="text-gray-400 text-xs">
+              <div v-if="day.isClosed" class="text-gray-500 text-xs font-semibold">
                 Cerrado
               </div>
               <div v-else class="text-purple-700 text-xs font-medium leading-tight">
-                {{ schedule.opening }}<br>{{ schedule.closing }}
+                <div v-for="(range, idx) in day.ranges" :key="idx">
+                  {{ range.openingTime }} - {{ range.closingTime }}
+                </div>
               </div>
             </div>
           </div>
@@ -541,6 +559,96 @@
         </div>
       </div>
     </div>
+
+    <!-- Botón flotante de personalización (solo para admin) -->
+    <button
+      v-if="isAdmin"
+      @click="showCustomizationModal = true"
+      class="fixed bottom-6 right-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform z-50"
+      title="Personalizar página"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+      </svg>
+    </button>
+
+    <!-- Modal de personalización -->
+    <div
+      v-if="showCustomizationModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      @click.self="showCustomizationModal = false"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-2xl">
+          <h2 class="text-2xl font-bold">🎨 Personalizar Página Pública</h2>
+          <p class="text-purple-100 text-sm mt-1">Personaliza los colores y el fondo de tu página de reservas</p>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <!-- Selector de fondo -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-3">Fondo de página</label>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <button
+                v-for="bg in backgroundOptions"
+                :key="bg.value"
+                @click="customization.background = bg.value"
+                :class="[
+                  'h-24 rounded-xl border-4 transition-all',
+                  customization.background === bg.value
+                    ? 'border-purple-600 scale-105'
+                    : 'border-gray-200 hover:border-purple-300'
+                ]"
+                :style="{ background: bg.preview }"
+              >
+                <div class="w-full h-full rounded-lg flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-10 transition-all">
+                  <span v-if="customization.background === bg.value" class="text-white text-2xl drop-shadow-lg">✓</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Vista previa -->
+          <div class="border-2 border-gray-200 rounded-xl p-4">
+            <p class="text-sm font-semibold text-gray-700 mb-3">Vista previa</p>
+            <div
+              :class="['p-6 rounded-lg', customization.background]"
+            >
+              <div
+                class="bg-white rounded-lg p-4 text-center shadow-lg"
+                :style="{ borderTop: `4px solid ${customization.primaryColor}` }"
+              >
+                <h3 class="text-xl font-bold mb-2" :style="{ color: customization.primaryColor }">
+                  {{ salon.name }}
+                </h3>
+                <button
+                  class="px-4 py-2 rounded-lg text-white font-semibold text-sm"
+                  :style="{ background: `linear-gradient(to right, ${customization.primaryColor}, ${customization.secondaryColor})` }"
+                >
+                  Reservar Cita
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sticky bottom-0 bg-gray-50 p-6 rounded-b-2xl flex gap-3">
+          <button
+            @click="showCustomizationModal = false"
+            class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="saveCustomization"
+            :disabled="savingCustomization"
+            class="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50"
+          >
+            {{ savingCustomization ? 'Guardando...' : 'Guardar Cambios' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -576,6 +684,25 @@ const appointmentSuccess = ref(false);
 // Detectar si el usuario está autenticado
 const authenticatedUser = ref(null);
 const isAuthenticated = ref(false);
+
+// Personalización de la página pública (solo para admin)
+const isAdmin = ref(false);
+const showCustomizationModal = ref(false);
+const savingCustomization = ref(false);
+const customization = ref({
+  background: 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100',
+  primaryColor: '#9333ea',
+  secondaryColor: '#ec4899'
+});
+
+const backgroundOptions = [
+  { value: 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100', preview: 'linear-gradient(to bottom right, rgb(250 245 255), rgb(252 231 243), rgb(243 232 255))' },
+  { value: 'bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100', preview: 'linear-gradient(to bottom right, rgb(239 246 255), rgb(236 254 255), rgb(219 234 254))' },
+  { value: 'bg-gradient-to-br from-green-50 via-emerald-50 to-green-100', preview: 'linear-gradient(to bottom right, rgb(240 253 244), rgb(236 253 245), rgb(220 252 231))' },
+  { value: 'bg-gradient-to-br from-pink-50 via-rose-50 to-pink-100', preview: 'linear-gradient(to bottom right, rgb(253 242 248), rgb(255 241 242), rgb(252 231 243))' },
+  { value: 'bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100', preview: 'linear-gradient(to bottom right, rgb(255 247 237), rgb(254 252 232), rgb(254 237 213))' },
+  { value: 'bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100', preview: 'linear-gradient(to bottom right, rgb(249 250 251), rgb(248 250 252), rgb(243 244 246))' }
+];
 
 // Verificar autenticación al cargar
 const checkAuthentication = () => {
@@ -699,6 +826,30 @@ const fetchSalon = async () => {
     console.log('✅ Datos del salón recibidos:', data);
     salon.value = data.salon || data;
     services.value = data.services || [];
+    
+    // Cargar personalización si existe
+    if (data.customization) {
+      customization.value = {
+        background: data.customization.background,
+        primaryColor: data.customization.primaryColor,
+        secondaryColor: data.customization.secondaryColor
+      };
+    }
+    
+    // Verificar si el usuario autenticado es el admin del salón
+    const user = authenticatedUser.value;
+    if (user && salon.value) {
+      console.log('👤 Usuario:', user);
+      console.log('🏢 Salón adminId:', salon.value.adminId);
+      
+      // Comparar el ID del usuario con el adminId del salón
+      if (user.id === salon.value.adminId) {
+        isAdmin.value = true;
+        console.log('✅ Usuario es admin del salón');
+      } else {
+        console.log('❌ Usuario NO es admin del salón');
+      }
+    }
   } catch (err) {
     console.error('❌ Error cargando el salón:', err);
     if (err.response) {
@@ -726,10 +877,42 @@ function getDayInitial(dayOfWeek) {
   return initials[dayOfWeek];
 }
 
-function getSortedSchedules(schedules) {
+function getGroupedSchedulesByDay(schedules) {
   if (!schedules) return [];
-  // Ordenar de lunes (1) a domingo (0)
-  return [...schedules].sort((a, b) => {
+  
+  // Inicializar todos los días de la semana
+  const allDays = [1, 2, 3, 4, 5, 6, 0]; // Lunes a Domingo
+  const dayGroups = {};
+  
+  // Inicializar todos los días como cerrados por defecto
+  allDays.forEach(day => {
+    dayGroups[day] = {
+      dayOfWeek: day,
+      isClosed: true,
+      ranges: []
+    };
+  });
+  
+  // Actualizar con los horarios configurados
+  schedules.forEach(schedule => {
+    const day = schedule.dayOfWeek;
+    dayGroups[day] = {
+      dayOfWeek: day,
+      isClosed: schedule.isClosed,
+      ranges: []
+    };
+    
+    if (!schedule.isClosed) {
+      dayGroups[day].ranges.push({
+        openingTime: schedule.openingTime,
+        closingTime: schedule.closingTime
+      });
+    }
+  });
+  
+  // Convertir a array y ordenar
+  const daysArray = Object.values(dayGroups);
+  return daysArray.sort((a, b) => {
     const orderA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
     const orderB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
     return orderA - orderB;
@@ -741,8 +924,8 @@ function groupSlotsByShifts(slots, schedules) {
   if (!schedules || schedules.length === 0) return [{ name: 'Horario Disponible', slots }];
   
   const groups = schedules.map((schedule) => {
-    const [openHour, openMin] = schedule.opening.split(':').map(Number);
-    const [closeHour, closeMin] = schedule.closing.split(':').map(Number);
+    const [openHour, openMin] = schedule.openingTime.split(':').map(Number);
+    const [closeHour, closeMin] = schedule.closingTime.split(':').map(Number);
     const openMinutes = openHour * 60 + openMin;
     const closeMinutes = closeHour * 60 + closeMin;
     
@@ -765,8 +948,8 @@ function groupSlotsByShifts(slots, schedules) {
     
     return {
       name,
-      opening: schedule.opening,
-      closing: schedule.closing,
+      opening: schedule.openingTime,
+      closing: schedule.closingTime,
       slots: shiftSlots,
     };
   }).filter(group => group.slots.length > 0);
@@ -808,6 +991,26 @@ watch(selectedDate, async (newDate) => {
     loadingSlots.value = false;
   }
 });
+
+async function saveCustomization() {
+  savingCustomization.value = true;
+  try {
+    await axios.put('/config/public-customization', {
+      publicPageBackground: customization.value.background,
+      publicPagePrimaryColor: customization.value.primaryColor,
+      publicPageSecondaryColor: customization.value.secondaryColor
+    });
+    
+    showCustomizationModal.value = false;
+    
+    alert('✅ Personalización guardada correctamente');
+  } catch (error) {
+    console.error('Error guardando personalización:', error);
+    alert('❌ Error al guardar la personalización');
+  } finally {
+    savingCustomization.value = false;
+  }
+}
 </script>
 
 <style scoped>

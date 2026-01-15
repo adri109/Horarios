@@ -49,6 +49,11 @@ export const getSalonPublic = async (req: Request, res: Response) => {
       salon,
       services: salon.services,
       availableSlots, // slots generados automáticamente
+      customization: {
+        background: salon.config?.publicPageBackground || 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100',
+        primaryColor: salon.config?.publicPagePrimaryColor || '#9333ea',
+        secondaryColor: salon.config?.publicPageSecondaryColor || '#ec4899'
+      }
     });
   } catch (error) {
     console.error('💥 Error al obtener salón público:', error);

@@ -6,7 +6,8 @@ import {
   updateSchedule,
   deleteSchedule,
   createBlock,
-  deleteBlock
+  deleteBlock,
+  updatePublicPageCustomization
 } from '../controllers/configController';
 import { authenticateToken } from '../middleware/auth';
 
@@ -27,5 +28,8 @@ router.delete('/schedules/:id', deleteSchedule);
 // Bloqueos de fechas
 router.post('/blocks', createBlock);
 router.delete('/blocks/:id', deleteBlock);
+
+// Personalización de página pública
+router.put('/public-customization', updatePublicPageCustomization);
 
 export default router;

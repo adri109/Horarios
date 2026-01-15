@@ -369,3 +369,53 @@ export const deleteBlock = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error al eliminar el bloqueo' });
   }
 };
+
+// Actualizar personalización de la página pública
+export const updatePublicPageCustomization = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { publicPageBackground, publicPagePrimaryColor, publicPageSecondaryColor } = req.body;
+
+    // Buscar el salón del usuario (debe ser admin)
+    const salon = await prisma.salon.findFirst({
+      where: { adminId: userId }
+    });
+
+    if (!salon) {
+      return res.status(403).json({ error: 'Solo el administrador puede personalizar la página pública' });
+    }
+
+    // Obtener o crear config
+    let config = await prisma.config.findUnique({
+      where: { salonId: salon.id }
+    });
+
+    if (!config) {
+      config = await prisma.config.create({
+        data: {
+          salonId: salon.id,
+          publicPageBackground,
+          publicPagePrimaryColor,
+          publicPageSecondaryColor
+        }
+      });
+    } else {
+      config = await prisma.config.update({
+        where: { salonId: salon.id },
+        data: {
+          publicPageBackground,
+          publicPagePrimaryColor,
+          publicPageSecondaryColor
+        }
+      });
+    }
+
+    res.json({ 
+      message: 'Personalización guardada correctamente',
+      config 
+    });
+  } catch (error) {
+    console.error('Error actualizando personalización:', error);
+    res.status(500).json({ error: 'Error al guardar la personalización' });
+  }
+};
