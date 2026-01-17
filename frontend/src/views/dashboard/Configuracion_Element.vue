@@ -32,6 +32,20 @@ if (user.role !== 'ADMIN') {
 const loading = ref(true);
 const saving = ref(false);
 
+// Estado de las pestañas
+const activeTab = ref('info'); // 'info', 'schedule', 'public', 'notifications'
+
+// Datos del salón
+const salonInfo = ref({
+  name: '',
+  address: '',
+  city: '',
+  postalCode: '',
+  phone: '',
+  email: '',
+  description: ''
+});
+
 // Configuración general
 const config = ref({
   canAcceptAppointments: true,
@@ -155,27 +169,63 @@ const getDaysInRange = (fromDay, toDay) => {
 
 // Detectar días que aparecen en múltiples rangos
 const detectOverlappingDays = () => {
-  const dayMap = new Map(); // día -> array de índices de rangos
-  
-  quickScheduleRanges.value.forEach((range, rangeIndex) => {
-    const days = getDaysInRange(range.fromDay, range.toDay);
-    days.forEach(day => {
-      if (!dayMap.has(day)) {
-        dayMap.set(day, []);
-      }
-      dayMap.get(day).push(rangeIndex);
-    });
-  });
-  
-  // Encontrar días que están en múltiples rangos
   const overlapping = [];
-  dayMap.forEach((rangeIndices, day) => {
-    if (rangeIndices.length > 1) {
-      const dayName = weekDays.find(d => d.id === day)?.name;
-      const rangeNumbers = rangeIndices.map(i => i + 1).join(', ');
-      overlapping.push({ day, dayName, ranges: rangeNumbers });
+  
+  // Comparar cada par de rangos
+  for (let i = 0; i < quickScheduleRanges.value.length; i++) {
+    for (let j = i + 1; j < quickScheduleRanges.value.length; j++) {
+      const range1 = quickScheduleRanges.value[i];
+      const range2 = quickScheduleRanges.value[j];
+      
+      // Obtener los días de cada rango
+      const days1 = getDaysInRange(range1.fromDay, range1.toDay);
+      const days2 = getDaysInRange(range2.fromDay, range2.toDay);
+      
+      // Encontrar días en común
+      const commonDays = days1.filter(day => days2.includes(day));
+      
+      if (commonDays.length > 0) {
+        // Hay días en común, ahora verificar si los horarios se solapan
+        let hasTimeOverlap = false;
+        
+        // Comparar cada turno del rango 1 con cada turno del rango 2
+        for (const shift1 of range1.shifts) {
+          for (const shift2 of range2.shifts) {
+            // Verificar si hay solapamiento de horarios
+            const start1 = shift1.openingTime;
+            const end1 = shift1.closingTime;
+            const start2 = shift2.openingTime;
+            const end2 = shift2.closingTime;
+            
+            // Dos rangos de tiempo se solapan si:
+            // - El inicio de uno está entre el inicio y fin del otro, o
+            // - El fin de uno está entre el inicio y fin del otro, o
+            // - Uno contiene completamente al otro
+            if ((start1 < end2 && end1 > start2)) {
+              hasTimeOverlap = true;
+              break;
+            }
+          }
+          if (hasTimeOverlap) break;
+        }
+        
+        // Solo agregar a overlapping si HAY días en común Y horarios solapados
+        if (hasTimeOverlap) {
+          commonDays.forEach(day => {
+            const dayName = weekDays.find(d => d.id === day)?.name;
+            const existing = overlapping.find(o => o.day === day);
+            if (!existing) {
+              overlapping.push({ 
+                day, 
+                dayName, 
+                ranges: `${i + 1}, ${j + 1}` 
+              });
+            }
+          });
+        }
+      }
     }
-  });
+  }
   
   overlappingDays.value = overlapping;
   return overlapping;
@@ -268,18 +318,6 @@ const applyQuickSchedule = async () => {
       return;
     }
     
-    const summary = quickScheduleRanges.value.map((range, idx) => {
-      const fromDayName = weekDays.find(d => d.id === range.fromDay)?.name;
-      const toDayName = weekDays.find(d => d.id === range.toDay)?.name;
-      const shiftsText = range.shifts.map(s => `${s.openingTime}-${s.closingTime}`).join(', ');
-      return `Rango ${idx + 1}: ${fromDayName} a ${toDayName} → ${shiftsText}`;
-    }).join('\n');
-    
-    const confirmed = await confirm('¿Aplicar estos horarios?', summary);
-    if (!confirmed) return;
-    
-    const token = localStorage.getItem('token');
-    
     // Crear mapa de día -> array de turnos (combinando todos los rangos)
     const dayShiftsMap = new Map();
     
@@ -301,6 +339,24 @@ const applyQuickSchedule = async () => {
       }
     }
     
+    // Crear resumen agrupado por día mostrando todos los turnos
+    const summaryByDay = new Map();
+    
+    for (const [dayOfWeek, shifts] of dayShiftsMap.entries()) {
+      const dayName = weekDays.find(d => d.id === dayOfWeek)?.name;
+      const shiftsText = shifts.map(s => `${s.openingTime}-${s.closingTime}`).join(', ');
+      summaryByDay.set(dayName, shiftsText);
+    }
+    
+    const summary = Array.from(summaryByDay.entries())
+      .map(([dayName, shiftsText]) => `${dayName}: ${shiftsText}`)
+      .join('\n');
+    
+    const confirmed = await confirm('¿Aplicar estos horarios?', summary);
+    if (!confirmed) return;
+    
+    const token = localStorage.getItem('token');
+    
     // Eliminar horarios existentes de todos los días afectados
     const allDaysToApply = Array.from(dayShiftsMap.keys());
     for (const dayOfWeek of allDaysToApply) {
@@ -310,6 +366,8 @@ const applyQuickSchedule = async () => {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
+      // Limpiar del array local también
+      schedules.value = schedules.value.filter(s => s.dayOfWeek !== dayOfWeek);
     }
     
     // Crear nuevos horarios para cada día
@@ -331,6 +389,8 @@ const applyQuickSchedule = async () => {
         }
       }
       
+      console.log(`Creando ${uniqueShifts.length} turnos para día ${dayOfWeek}:`, uniqueShifts);
+      
       // Crear cada turno único
       for (const shift of uniqueShifts) {
         const response = await axios.post(`${API_URL}/config/schedules`, {
@@ -348,10 +408,10 @@ const applyQuickSchedule = async () => {
     // Recargar configuración para asegurar consistencia
     await fetchConfig();
     
-    console.log('✅ Horarios aplicados masivamente (solapamientos combinados)');
+    console.log('Horarios aplicados masivamente (solapamientos combinados)');
     showToast('Horarios aplicados correctamente', 'success');
   } catch (error) {
-    console.error('❌ Error aplicando horarios:', error);
+    console.error('Error aplicando horarios:', error);
     showToast('Error al aplicar los horarios', 'error');
   }
 };
@@ -376,7 +436,7 @@ const fetchConfig = async () => {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    console.log('✅ Configuración recibida:', response.data);
+    console.log('Configuración recibida:', response.data);
     
     if (response.data.config) {
       config.value = response.data.config;
@@ -385,14 +445,50 @@ const fetchConfig = async () => {
     schedules.value = response.data.schedules || [];
     blocks.value = response.data.blocks || [];
     
+    // Cargar información del salón
+    if (response.data.salon) {
+      salonInfo.value.name = response.data.salon.name || '';
+      salonInfo.value.address = response.data.salon.address || '';
+      salonInfo.value.city = response.data.salon.city || '';
+      salonInfo.value.phone = response.data.salon.phone || '';
+      salonInfo.value.description = response.data.salon.description || '';
+    }
+    
   } catch (error) {
-    console.error('❌ Error cargando configuración:', error);
+    console.error('Error cargando configuración:', error);
     if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
   } finally {
     loading.value = false;
+  }
+};
+
+// Guardar información del salón
+const saveSalonInfo = async () => {
+  try {
+    saving.value = true;
+    
+    const token = localStorage.getItem('token');
+    const response = await axios.put(`${API_URL}/salon/info`, {
+      name: salonInfo.value.name,
+      address: salonInfo.value.address,
+      city: salonInfo.value.city,
+      phone: salonInfo.value.phone,
+      description: salonInfo.value.description
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    showToast('Información del salón guardada correctamente', 'success');
+    console.log('Info guardada:', response.data);
+    
+  } catch (error) {
+    console.error('Error guardando información:', error);
+    showToast('Error al guardar la información', 'error');
+  } finally {
+    saving.value = false;
   }
 };
 
@@ -406,9 +502,9 @@ const saveConfig = async () => {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    console.log('✅ Configuración guardada');
+    console.log('Configuración guardada');
   } catch (error) {
-    console.error('❌ Error guardando configuración:', error);
+    console.error('Error guardando configuración:', error);
   } finally {
     saving.value = false;
   }
@@ -473,9 +569,9 @@ const addScheduleSlot = async (dayOfWeek) => {
     });
     
     schedules.value.push(response.data);
-    console.log('✅ Horario añadido');
+    console.log('Horario añadido');
   } catch (error) {
-    console.error('❌ Error añadiendo horario:', error);
+    console.error('Error añadiendo horario:', error);
     if (error.response?.data?.error) {
       alert(error.response.data.error);
     }
@@ -495,9 +591,9 @@ const updateScheduleSlot = async (schedule) => {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    console.log('✅ Horario actualizado');
+    console.log('Horario actualizado');
   } catch (error) {
-    console.error('❌ Error actualizando horario:', error);
+    console.error('Error actualizando horario:', error);
   }
 };
 
@@ -513,9 +609,9 @@ const deleteScheduleSlot = async (scheduleId) => {
     });
     
     schedules.value = schedules.value.filter(s => s.id !== scheduleId);
-    console.log('✅ Horario eliminado');
+    console.log('Horario eliminado');
   } catch (error) {
-    console.error('❌ Error eliminando horario:', error);
+    console.error('Error eliminando horario:', error);
   }
 };
 
@@ -543,9 +639,9 @@ const toggleDayClosed = async (dayOfWeek) => {
       schedules.value.push(response.data);
     }
     
-    console.log('✅ Estado actualizado');
+    console.log('Estado actualizado');
   } catch (error) {
-    console.error('❌ Error actualizando estado:', error);
+    console.error('Error actualizando estado:', error);
   }
 };
 
@@ -576,9 +672,9 @@ const createBlock = async () => {
     
     blocks.value.push(response.data);
     showBlockModal.value = false;
-    console.log('✅ Bloqueo creado');
+    console.log('Bloqueo creado');
   } catch (error) {
-    console.error('❌ Error creando bloqueo:', error);
+    console.error('Error creando bloqueo:', error);
   }
 };
 
@@ -595,9 +691,9 @@ const deleteBlock = async (blockId) => {
     });
     
     blocks.value = blocks.value.filter(b => b.id !== blockId);
-    console.log('✅ Bloqueo eliminado');
+    console.log('Bloqueo eliminado');
   } catch (error) {
-    console.error('❌ Error eliminando bloqueo:', error);
+    console.error('Error eliminando bloqueo:', error);
   }
 };
 
@@ -635,9 +731,179 @@ onMounted(() => {
     </div>
 
     <div v-else class="config-content">
-      
-      <!-- CONFIGURACIÓN GENERAL -->
-      <section class="config-section">
+      <!-- TABS -->
+      <div class="tabs-container">
+        <button 
+          @click="activeTab = 'info'" 
+          :class="['tab-button', { 'active': activeTab === 'info' }]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" />
+          </svg>
+          Información del Salón
+        </button>
+        
+        <button 
+          @click="activeTab = 'schedule'" 
+          :class="['tab-button', { 'active': activeTab === 'schedule' }]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+          Horarios
+        </button>
+        
+        <button 
+          @click="activeTab = 'public'" 
+          :class="['tab-button', { 'active': activeTab === 'public' }]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+          </svg>
+          Página Pública
+        </button>
+        
+        <button 
+          @click="activeTab = 'notifications'" 
+          :class="['tab-button', { 'active': activeTab === 'notifications' }]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+          </svg>
+          Notificaciones
+        </button>
+      </div>
+
+      <!-- TAB: INFORMACIÓN DEL SALÓN -->
+      <section v-if="activeTab === 'info'" class="config-section">
+        <div class="section-header">
+          <h2 class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" />
+            </svg>
+            Información del Salón
+          </h2>
+          <button @click="saveSalonInfo" :disabled="saving" class="btn-save flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+            </svg>
+            {{ saving ? 'Guardando...' : 'Guardar' }}
+          </button>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-group">
+            <label class="info-label">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" />
+              </svg>
+              Nombre del Salón
+            </label>
+            <input 
+              type="text" 
+              v-model="salonInfo.name" 
+              placeholder="Ej: Salón de Belleza Elegance"
+              class="info-input"
+            />
+          </div>
+
+          <div class="info-group span-2">
+            <label class="info-label">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+              Dirección
+            </label>
+            <input 
+              type="text" 
+              v-model="salonInfo.address" 
+              placeholder="Calle, número, piso..."
+              class="info-input"
+            />
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+              Ciudad
+            </label>
+            <input 
+              type="text" 
+              v-model="salonInfo.city" 
+              placeholder="Ej: Madrid"
+              class="info-input"
+            />
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5 1.615a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V8.844a2.25 2.25 0 011.183-1.98l7.5-4.04a2.25 2.25 0 012.134 0l7.5 4.04a2.25 2.25 0 011.183 1.98V19.5z" />
+              </svg>
+              Código Postal
+            </label>
+            <input 
+              type="text" 
+              v-model="salonInfo.postalCode" 
+              placeholder="Ej: 28001"
+              class="info-input"
+            />
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+              </svg>
+              Teléfono
+            </label>
+            <input 
+              type="tel" 
+              v-model="salonInfo.phone" 
+              placeholder="Ej: +34 912 345 678"
+              class="info-input"
+            />
+          </div>
+
+          <div class="info-group">
+            <label class="info-label">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
+              Email de Contacto
+            </label>
+            <input 
+              type="email" 
+              v-model="salonInfo.email" 
+              placeholder="Ej: contacto@salon.com"
+              class="info-input"
+            />
+          </div>
+
+          <div class="info-group span-2">
+            <label class="info-label">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+              </svg>
+              Descripción
+            </label>
+            <textarea 
+              v-model="salonInfo.description" 
+              placeholder="Describe tu salón, servicios destacados, años de experiencia..."
+              rows="4"
+              class="info-textarea"
+            ></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: HORARIOS -->
+      <section v-if="activeTab === 'schedule'" class="config-section">
+        <!-- CONFIGURACIÓN GENERAL DE HORARIOS -->
         <div class="section-header">
           <h2 class="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -670,11 +936,11 @@ onMounted(() => {
             <input type="number" v-model="config.serviceIntervalMinutes" min="5" max="120" class="time-input" />
           </div>
         </div>
-      </section>
 
-      <!-- HORARIOS SEMANALES -->
-      <section class="config-section">
-        <div class="section-header">
+        <!-- HORARIOS SEMANALES -->
+        <div class="section-divider"></div>
+        
+        <div class="section-header" style="margin-top: 2rem;">
           <h2 class="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
@@ -814,11 +1080,11 @@ onMounted(() => {
         </div>
         
         <div class="schedules-table">
-          <div v-if="scheduleMode === 'manual'">
-            <p class="subtitle-small" style="margin-bottom: 1rem;">Configura horarios específicos para cada día. Puedes añadir turnos partidos.</p>
-          </div>
           <template v-if="scheduleMode === 'manual'">
-          <div v-for="day in weekDays" :key="day.id" class="schedule-row">
+            <div>
+              <p class="subtitle-small" style="margin-bottom: 1rem;">Configura horarios específicos para cada día. Puedes añadir turnos partidos.</p>
+            </div>
+            <div v-for="day in weekDays" :key="day.id" class="schedule-row">
             <!-- Nombre del día -->
             <div class="day-name-col">{{ day.name }}</div>
             
@@ -885,11 +1151,11 @@ onMounted(() => {
           </div>
           </template>
         </div>
-      </section>
 
-      <!-- BLOQUEOS DE FECHAS -->
-      <section class="config-section">
-        <div class="section-header">
+        <!-- BLOQUEOS DE FECHAS (dentro del tab de Horarios) -->
+        <div class="section-divider"></div>
+        
+        <div class="section-header" style="margin-top: 2rem;">
           <h2 class="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -938,6 +1204,46 @@ onMounted(() => {
               Eliminar
             </button>
           </div>
+        </div>
+      </section>
+
+      <!-- TAB: PÁGINA PÚBLICA -->
+      <section v-if="activeTab === 'public'" class="config-section">
+        <div class="section-header">
+          <h2 class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+            </svg>
+            Personalización de Página Pública
+          </h2>
+        </div>
+
+        <div class="coming-soon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+          </svg>
+          <h3>Próximamente</h3>
+          <p>Aquí podrás personalizar los colores, fondos y estilo de tu página pública.</p>
+        </div>
+      </section>
+
+      <!-- TAB: NOTIFICACIONES -->
+      <section v-if="activeTab === 'notifications'" class="config-section">
+        <div class="section-header">
+          <h2 class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+            </svg>
+            Configuración de Notificaciones
+          </h2>
+        </div>
+
+        <div class="coming-soon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+          </svg>
+          <h3>Próximamente</h3>
+          <p>Aquí podrás configurar notificaciones por email, SMS y recordatorios automáticos.</p>
         </div>
       </section>
     </div>
@@ -2148,6 +2454,145 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
+/* Tabs */
+.tabs-container {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  background: white;
+  padding: 0.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow-x: auto;
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.tab-button:hover {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Información del Salón */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-group.span-2 {
+  grid-column: span 2;
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.875rem;
+}
+
+.info-label svg {
+  width: 1rem;
+  height: 1rem;
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.info-input,
+.info-textarea {
+  padding: 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.info-input:focus,
+.info-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.info-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Dividers */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+  margin: 2rem 0;
+}
+
+/* Coming Soon States */
+.coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f3f4ff 100%);
+  border-radius: 12px;
+  border: 2px dashed #c7d2fe;
+}
+
+.coming-soon svg {
+  color: #a5b4fc;
+  margin-bottom: 1rem;
+}
+
+.coming-soon h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: #4338ca;
+}
+
+.coming-soon p {
+  margin: 0;
+  color: #6366f1;
+  font-size: 0.9375rem;
+}
+
 @media (max-width: 768px) {
   .toast-container {
     left: 1rem;
@@ -2155,6 +2600,24 @@ onMounted(() => {
     max-width: none;
   }
 
+  .tabs-container {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+  }
+
+  .tab-button {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .info-group.span-2 {
+    grid-column: span 1;
+  }
   
   .schedule-row {
     grid-template-columns: 1fr;

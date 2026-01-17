@@ -2,10 +2,112 @@
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
-El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
+El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Sin publicar]
+
+### En Desarrollo - 2026-01-17
+
+#### Añadido
+- **Calendario Personalizado 100% Custom para Página Pública**
+  - Componente `CustomCalendar.vue` completamente personalizado reemplazando input HTML5 nativo
+  - Dropdown interactivo que se abre al hacer clic
+  - Navegación de mes/año con flechas (previene navegación a meses pasados)
+  - Diseño totalmente personalizado usando colores del tema del salón
+  - Inicio de semana en lunes (estándar español)
+  - Días pasados deshabilitados visualmente (gris claro, no seleccionables)
+  - Días cerrados del salón bloqueados automáticamente según horarios configurados
+  - Fecha actual seleccionada por defecto al cargar la página
+  - Botones auxiliares "Hoy" y "Limpiar" para navegación rápida
+  - Transiciones suaves al abrir/cerrar calendario
+  - Responsive para móvil y desktop
+  - Función `isClosedDay()` que verifica días cerrados del salón
+  - Función `getClosedDays()` en SalonPublicPage que mapea días cerrados desde schedules
+
+- **Sistema de Scroll Automático Suave en Flujo de Reserva**
+  - Scroll suave al calendario al seleccionar un servicio (`block: 'center'`)
+  - Scroll suave a horarios disponibles al seleccionar una fecha (después de cargar slots)
+  - Scroll suave a sección de confirmación al seleccionar una hora
+  - Timeouts optimizados para dar tiempo a renderizado del DOM
+  - Uso de `nextTick()` para asegurar actualización del DOM antes de scroll
+  - Referencias `calendarSection`, `slotsSection`, `confirmSection` para control preciso
+  - Mejora significativa en UX del flujo de reserva guiando al usuario paso a paso
+
+- **Configuración ESLint para Vue 3**
+  - Agregados globales de Vue 3 en `.eslintrc.js`: `defineProps`, `defineEmits`, `defineExpose`, `withDefaults`
+  - Eliminados errores de compilación "not defined" para macros de Vue 3
+
+#### Mejorado
+- **Calendario Personalizado - Optimización de Tamaño**
+  - Ancho máximo reducido de 384px a 280px para mejor visualización
+  - Padding general optimizado (p-2 en lugar de p-4)
+  - Título del mes reducido a text-sm
+  - Iconos de navegación más pequeños (w-3.5 h-3.5)
+  - Días de la semana con tamaño mínimo (text-[10px])
+  - Gap entre elementos reducido (gap-0.5)
+  - Botones del footer compactos (px-2 py-1, text-xs)
+  - Scroll automático al calendario al abrirlo para asegurar visibilidad completa
+
+- **Selección de Fechas - Corrección de Zona Horaria**
+  - Reemplazado `toISOString()` por formateo manual para evitar desfase de días
+  - Uso de `getFullYear()`, `getMonth()`, `getDate()` para mantener zona horaria local
+  - Eliminado bug donde seleccionar sábado marcaba viernes
+
+#### Técnico
+- Importación de `nextTick` en SalonPublicPage.vue para control de scroll
+- Prop `closedDays` en CustomCalendar (array de números 0-6, donde 0=Domingo)
+- Función `isDisabledDate()` que combina `isPastDate()` y `isClosedDay()`
+- Ajuste de cálculo de `startDayOfWeek` para semana que inicia en lunes
+- Refs reactivos para secciones scrollables del flujo de reserva
+
+---
+
+### En Desarrollo - 2026-01-15
+
+#### Añadido
+- **Sistema de Personalización de Página Pública**
+  - Botón flotante con icono de pincel (solo visible para administrador del salón)
+  - Modal de personalización con 6 opciones de fondos predefinidos (gradientes)
+  - Vista previa en tiempo real de los cambios
+  - Aplicación dinámica de colores primarios y secundarios en toda la página
+  - Nuevos campos en modelo `Config`: `publicPageBackground`, `publicPagePrimaryColor`, `publicPageSecondaryColor`
+  - Endpoint `PUT /config/public-customization` para guardar personalización
+  - Personalización cargada automáticamente al visitar el slug público
+  - Sistema reactivo con Vue para aplicar cambios sin recargar página
+
+- **Archivo de Planificación IDEAS-FUTURAS.md**
+  - Documentación completa del sistema de page builder planificado
+  - Arquitectura de 12 tipos de bloques reutilizables con variantes
+  - Sistema de grid layout (12 columnas) para posicionamiento flexible
+  - Plan de implementación por fases (11 semanas)
+  - Stack técnico y librerías recomendadas
+  - Integraciones de redes sociales (Instagram, Facebook, TikTok, YouTube)
+  - Sistema de reviews y comentarios
+  - Features premium futuras
+
+#### Mejorado
+- **Visualización de Horarios en Slug Público**
+  - Horarios ahora se muestran agrupados por día
+  - Soporte para múltiples rangos horarios por día (turnos partidos)
+  - Formato mejorado: "9:00 - 13:00" y "16:00 - 20:00" en líneas separadas
+  - Todos los 7 días de la semana se muestran siempre (Lunes a Domingo)
+  - Días cerrados se muestran con estilo visual diferenciado (gris)
+  - Función `getGroupedSchedulesByDay()` para agrupar horarios correctamente
+
+#### Corregido
+- Corregidos errores de linting en `Configuracion_Element.vue`:
+  - Eliminada variable no usada `rangeIndex`
+  - Movido `v-if` a elemento wrapper `<template>` para evitar conflicto con `v-for`
+- Corregidos nombres de campos de horarios para coincidir con Prisma schema (`openingTime` y `closingTime`)
+- Corregido prefijo `bg-` en clases de gradiente para que Tailwind las aplique correctamente
+- Corregida función `getGroupedSchedulesByDay()` para mostrar todos los días de la semana
+
+#### Base de Datos
+- Migración `20260115055150_add_public_page_customization`: Agregados campos de personalización al modelo Config
+- Migración `20260115060114_fix_background_default`: Corregido valor por defecto del background con prefijo `bg-`
+
+---
 
 ### En Desarrollo - 2026-01-14
 

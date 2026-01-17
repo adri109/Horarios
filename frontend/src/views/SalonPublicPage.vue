@@ -63,15 +63,21 @@
           >
             {{ salon.name }}
           </h2>
+          
+          <!-- Descripción del salón -->
+          <p v-if="salon.description" class="text-gray-600 mb-4 text-sm md:text-base leading-relaxed">
+            {{ salon.description }}
+          </p>
+          
           <div class="flex flex-wrap gap-4 text-gray-700">
-            <div class="flex items-center">
+            <div v-if="salon.address" class="flex items-center">
               <svg class="w-5 h-5 mr-2" :style="{ color: customization.primaryColor }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
               </svg>
-              {{ salon.address }}
+              <span>{{ salon.address }}<span v-if="salon.city">, {{ salon.city }}</span></span>
             </div>
-            <div class="flex items-center">
+            <div v-if="salon.phone" class="flex items-center">
               <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
               </svg>
@@ -232,29 +238,20 @@
               <p class="text-sm text-gray-600">Duración: {{ selectedService.duration }} min | Precio: €{{ selectedService.price }}</p>
             </div>
 
-            <!-- Selector de fecha rediseñado -->
-            <div class="mb-8">
+            <!-- Selector de fecha personalizado -->
+            <div ref="calendarSection" class="mb-8">
               <label class="block text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-purple-600">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6" :style="{ color: customization.primaryColor }">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                 </svg>
                 Selecciona la fecha
               </label>
-              <div class="relative">
-                <input
-                  type="date"
-                  id="reservation-date"
-                  v-model="selectedDate"
-                  :min="new Date().toISOString().split('T')[0]"
-                  class="w-full p-4 pl-14 pr-4 border-2 border-purple-300 rounded-xl shadow-sm focus:ring-4 focus:ring-purple-200 focus:border-purple-500 text-base font-medium transition-all bg-white cursor-pointer hover:border-purple-400 hover:shadow-md"
-                  style="color-scheme: light;"
-                />
-                <div class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-purple-600">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                  </svg>
-                </div>
-              </div>
+              <CustomCalendar
+                v-model="selectedDate"
+                :primary-color="customization.primaryColor"
+                :secondary-color="customization.secondaryColor"
+                :closed-days="getClosedDays()"
+              />
             </div>
 
             <!-- Loading slots -->
@@ -264,7 +261,7 @@
             </div>
 
             <!-- Horarios disponibles rediseñados -->
-            <div v-else-if="allSlots.length > 0">
+            <div ref="slotsSection" v-else-if="allSlots.length > 0">
               <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
                 <label class="text-xl font-bold text-gray-800 flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-purple-600">
@@ -390,7 +387,7 @@
                 </div>
 
                 <!-- Resumen de reserva -->
-                <div v-else class="p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
+                <div ref="confirmSection" v-else class="p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
                   <h3 class="font-bold text-lg text-gray-800 mb-4">📋 Resumen de tu reserva</h3>
                   <div class="space-y-2 mb-6">
                     <p class="text-gray-700">
@@ -653,9 +650,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from '@/utils/axios';
+import CustomCalendar from '@/components/CustomCalendar.vue';
 
 const route = useRoute();
 const slug = route.params.slug;
@@ -666,12 +664,23 @@ const loading = ref(true);
 
 // Reserva
 const selectedService = ref(null);
-const selectedDate = ref(null);
+const selectedDate = ref(() => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+});
 const selectedSlot = ref(null);
 const displaySlots = ref([]);
 const allSlots = ref([]);
 const scheduleData = ref(null);
 const loadingSlots = ref(false);
+
+// Refs para scroll automático
+const calendarSection = ref(null);
+const slotsSection = ref(null);
+const confirmSection = ref(null);
 
 // Formulario de cliente
 const showClientForm = ref(false);
@@ -720,7 +729,7 @@ const checkAuthentication = () => {
       clientEmail.value = user.email || '';
       clientPhone.value = user.phone || '';
       
-      console.log('✅ Usuario autenticado detectado:', user.email);
+      console.log('Usuario autenticado detectado:', user.email);
     } catch (e) {
       console.error('Error parseando usuario:', e);
     }
@@ -734,11 +743,29 @@ function selectService(service) {
   displaySlots.value = [];
   showClientForm.value = false;
   appointmentSuccess.value = false;
+  
+  // Scroll suave al calendario
+  nextTick(() => {
+    setTimeout(() => {
+      if (calendarSection.value) {
+        calendarSection.value.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 200);
+  });
 }
 
 function selectSlot(slot) {
   selectedSlot.value = slot;
   showClientForm.value = false;
+  
+  // Scroll suave a la sección de confirmación
+  nextTick(() => {
+    setTimeout(() => {
+      if (confirmSection.value) {
+        confirmSection.value.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 200);
+  });
 }
 
 function openClientForm() {
@@ -772,7 +799,7 @@ async function confirmAppointment() {
 
   savingAppointment.value = true;
   try {
-    console.log('📤 Creando cita...');
+    console.log('Creando cita...');
     const [hour, minute] = selectedSlot.value.split(':');
     const startDateTime = new Date(selectedDate.value);
     startDateTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
@@ -791,7 +818,7 @@ async function confirmAppointment() {
       isStaffBooking: isAuthenticated.value, // Flag para indicar que es un trabajador
     }, config);
 
-    console.log('✅ Cita creada:', response.data);
+    console.log('Cita creada:', response.data);
     appointmentSuccess.value = true;
     
     // Limpiar formulario
@@ -811,7 +838,7 @@ async function confirmAppointment() {
     }, clearDelay);
 
   } catch (err) {
-    console.error('❌ Error creando cita:', err);
+    console.error('Error creando cita:', err);
   } finally {
     savingAppointment.value = false;
   }
@@ -821,9 +848,9 @@ async function confirmAppointment() {
 const fetchSalon = async () => {
   loading.value = true;
   try {
-    console.log('📤 Cargando salón público con slug:', slug);
+    console.log('Cargando salón público con slug:', slug);
     const { data } = await axios.get(`/public/${slug}`);
-    console.log('✅ Datos del salón recibidos:', data);
+    console.log('Datos del salón recibidos:', data);
     salon.value = data.salon || data;
     services.value = data.services || [];
     
@@ -845,13 +872,13 @@ const fetchSalon = async () => {
       // Comparar el ID del usuario con el adminId del salón
       if (user.id === salon.value.adminId) {
         isAdmin.value = true;
-        console.log('✅ Usuario es admin del salón');
+        console.log('Usuario es admin del salón');
       } else {
-        console.log('❌ Usuario NO es admin del salón');
+        console.log('Usuario NO es admin del salón');
       }
     }
   } catch (err) {
-    console.error('❌ Error cargando el salón:', err);
+    console.error('Error cargando el salón:', err);
     if (err.response) {
       console.error('❌ Respuesta del servidor:', err.response?.data);
     }
@@ -896,12 +923,17 @@ function getGroupedSchedulesByDay(schedules) {
   // Actualizar con los horarios configurados
   schedules.forEach(schedule => {
     const day = schedule.dayOfWeek;
-    dayGroups[day] = {
-      dayOfWeek: day,
-      isClosed: schedule.isClosed,
-      ranges: []
-    };
     
+    // Si el día no tiene horarios aún, inicializarlo
+    if (!dayGroups[day] || dayGroups[day].isClosed) {
+      dayGroups[day] = {
+        dayOfWeek: day,
+        isClosed: schedule.isClosed,
+        ranges: []
+      };
+    }
+    
+    // Añadir el turno solo si no está cerrado
     if (!schedule.isClosed) {
       dayGroups[day].ranges.push({
         openingTime: schedule.openingTime,
@@ -919,13 +951,44 @@ function getGroupedSchedulesByDay(schedules) {
   });
 }
 
+// Obtener días cerrados para el calendario
+function getClosedDays() {
+  if (!salon.value || !salon.value.schedules) return [];
+  
+  const closedDaysOfWeek = [];
+  const scheduleDays = {};
+  
+  // Mapear qué días tienen horarios configurados
+  salon.value.schedules.forEach(schedule => {
+    if (!scheduleDays[schedule.dayOfWeek]) {
+      scheduleDays[schedule.dayOfWeek] = [];
+    }
+    scheduleDays[schedule.dayOfWeek].push(schedule);
+  });
+  
+  // Verificar cada día de la semana (0=Domingo, 1=Lunes, ..., 6=Sábado)
+  for (let day = 0; day <= 6; day++) {
+    const daySchedules = scheduleDays[day];
+    
+    // Si no hay horarios configurados o todos están marcados como cerrado
+    if (!daySchedules || daySchedules.every(s => s.isClosed)) {
+      closedDaysOfWeek.push(day);
+    }
+  }
+  
+  return closedDaysOfWeek;
+}
+
 // Función para agrupar slots por turnos (ahora con objetos que tienen estado)
 function groupSlotsByShifts(slots, schedules) {
   if (!schedules || schedules.length === 0) return [{ name: 'Horario Disponible', slots }];
   
   const groups = schedules.map((schedule) => {
-    const [openHour, openMin] = schedule.openingTime.split(':').map(Number);
-    const [closeHour, closeMin] = schedule.closingTime.split(':').map(Number);
+    // Validar que existan las propiedades necesarias
+    if (!schedule.opening || !schedule.closing) return null;
+    
+    const [openHour, openMin] = schedule.opening.split(':').map(Number);
+    const [closeHour, closeMin] = schedule.closing.split(':').map(Number);
     const openMinutes = openHour * 60 + openMin;
     const closeMinutes = closeHour * 60 + closeMin;
     
@@ -948,11 +1011,11 @@ function groupSlotsByShifts(slots, schedules) {
     
     return {
       name,
-      opening: schedule.openingTime,
-      closing: schedule.closingTime,
+      opening: schedule.opening,
+      closing: schedule.closing,
       slots: shiftSlots,
     };
-  }).filter(group => group.slots.length > 0);
+  }).filter(group => group && group.slots.length > 0);
   
   return groups;
 }
@@ -975,20 +1038,29 @@ watch(selectedDate, async (newDate) => {
         duration: selectedService.value.duration,
       },
     });
-    console.log('✅ Slots cargados:', data);
+    console.log('Slots cargados:', data);
     displaySlots.value = data.availableSlots || [];
     allSlots.value = data.allSlots || [];
     scheduleData.value = data.schedules || null;
   } catch (err) {
-    console.error('❌ Error cargando slots:', err);
+    console.error('Error cargando slots:', err);
     if (err.response) {
-      console.error('❌ Respuesta del servidor:', err.response?.data);
+      console.error('Respuesta del servidor:', err.response?.data);
     }
     displaySlots.value = [];
     allSlots.value = [];
     scheduleData.value = null;
   } finally {
     loadingSlots.value = false;
+    
+    // Scroll automático a la sección de horarios después de cargar
+    nextTick(() => {
+      setTimeout(() => {
+        if (slotsSection.value && allSlots.value.length > 0) {
+          slotsSection.value.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    });
   }
 });
 
@@ -1014,72 +1086,5 @@ async function saveCustomization() {
 </script>
 
 <style scoped>
-/* Estilos personalizados para el calendario desplegable */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  left: 0;
-  top: 0;
-}
-
-/* Estilizar el dropdown del calendario en navegadores Webkit/Chromium */
-input[type="date"]::-webkit-datetime-edit {
-  padding: 0;
-}
-
-input[type="date"]::-webkit-datetime-edit-fields-wrapper {
-  padding: 0;
-}
-
-input[type="date"]::-webkit-datetime-edit-text {
-  color: #6b7280;
-  padding: 0 0.2em;
-}
-
-input[type="date"]::-webkit-datetime-edit-month-field,
-input[type="date"]::-webkit-datetime-edit-day-field,
-input[type="date"]::-webkit-datetime-edit-year-field {
-  color: #1f2937;
-  font-weight: 500;
-}
-
-input[type="date"]::-webkit-datetime-edit-month-field:focus,
-input[type="date"]::-webkit-datetime-edit-day-field:focus,
-input[type="date"]::-webkit-datetime-edit-year-field:focus {
-  background-color: #f3e8ff;
-  color: #7c3aed;
-  outline: none;
-  border-radius: 0.25rem;
-}
-
-/* Estilos para el calendario desplegable (solo Chrome/Edge) */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  background: transparent;
-  bottom: 0;
-  color: transparent;
-  cursor: pointer;
-  height: auto;
-  left: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: auto;
-}
-
-/* Mejorar contraste cuando está enfocado */
-input[type="date"]:focus::-webkit-datetime-edit-month-field,
-input[type="date"]:focus::-webkit-datetime-edit-day-field,
-input[type="date"]:focus::-webkit-datetime-edit-year-field {
-  background-color: #f3e8ff;
-  color: #7c3aed;
-}
-
-/* Firefox - Estilos básicos */
-input[type="date"]::-moz-focus-inner {
-  border: 0;
-  padding: 0;
-}
+/* Estilos para la página pública */
 </style>

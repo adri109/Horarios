@@ -100,3 +100,36 @@ export const getSalonSlots = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error obteniendo slots' });
   }
 };
+
+export const updateSalonInfo = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const { name, address, city, phone, description } = req.body;
+
+    // Buscar el salón del usuario admin
+    const salon = await prisma.salon.findFirst({
+      where: { adminId: userId }
+    });
+
+    if (!salon) {
+      return res.status(404).json({ error: 'Salón no encontrado' });
+    }
+
+    // Actualizar información del salón
+    const updatedSalon = await prisma.salon.update({
+      where: { id: salon.id },
+      data: {
+        name: name || salon.name,
+        address: address || salon.address,
+        city: city || salon.city,
+        phone: phone || salon.phone,
+        description: description || salon.description
+      }
+    });
+
+    res.json(updatedSalon);
+  } catch (error) {
+    console.error('Error actualizando información del salón:', error);
+    res.status(500).json({ error: 'Error actualizando información' });
+  }
+};

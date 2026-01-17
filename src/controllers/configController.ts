@@ -58,7 +58,14 @@ export const getConfig = async (req: Request, res: Response) => {
     res.json({
       config,
       schedules,
-      blocks
+      blocks,
+      salon: {
+        name: salon.name,
+        address: salon.address,
+        city: salon.city,
+        phone: salon.phone,
+        description: salon.description
+      }
     });
   } catch (error) {
     console.error('Error obteniendo configuración:', error);

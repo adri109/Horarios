@@ -1,5 +1,34 @@
 # 💡 Ideas y Planificación Futura
 
+## ✅ IMPLEMENTACIÓN EN PROGRESO - 16/01/2026
+
+### 🔧 Estado Actual: Sistemas Paralelos
+Se ha creado un nuevo sistema de Page Builder que funciona en paralelo con el sistema público actual:
+
+**Backend:**
+- ✅ Nuevo controlador: `pageBuilderController.ts`
+- ✅ Nuevas rutas: `pageBuilderRoutes.ts` → `/page/:slug`
+- ✅ Sistema original `/public/:slug` funcionando normalmente
+- ✅ Logs diferenciados con prefijo `[PageBuilder]`
+
+**Frontend:**
+- ✅ Nueva vista: `PageBuilder_Page.vue` (copia de SalonPublicPage.vue)
+- ✅ Nueva ruta: `/page/:slug` → Sistema nuevo de Page Builder
+- ✅ Ruta original: `/salon/:slug` → Sistema público actual
+- ✅ Ambos sistemas activos simultáneamente
+
+**URLs Disponibles:**
+- Sistema original (funcional): `http://localhost:8080/salon/mi-peluqueria`
+- Page Builder (en desarrollo): `http://localhost:8080/page/mi-peluqueria`
+
+**Próximos Pasos:**
+1. Crear modelo de datos en Prisma para bloques del page builder
+2. Implementar sistema de grid layout en frontend
+3. Crear editor visual de bloques
+4. Implementar catálogo de bloques (empezar con Header y Booking)
+
+---
+
 ## 🎨 Sistema de Page Builder para Slug Público
 
 ### Objetivo

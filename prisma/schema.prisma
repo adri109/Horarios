@@ -61,7 +61,9 @@ model Salon {
   name        String
   slug        String   @unique
   address     String?
+  city        String?
   phone       String?
+  description String?
 
   adminId     Int     @unique
   admin       User    @relation("SalonAdmin", fields: [adminId], references: [id])

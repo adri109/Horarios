@@ -41,7 +41,7 @@ const routes = [
     component: TechInfo,
   },
 
-  // Ruta pública dinámica por slug
+  // Ruta pública del salón
   {
     path: '/salon/:slug',
     name: 'SalonPublic',
