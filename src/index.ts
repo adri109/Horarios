@@ -53,16 +53,13 @@ export { io };
 
 // Gestión de conexiones WebSocket
 io.on('connection', (socket) => {
-  console.log('🔌 Cliente conectado:', socket.id);
-  
   // Unir al usuario a su room personal
   socket.on('join', (userId: number) => {
     socket.join(`user_${userId}`);
-    console.log(`👤 Usuario ${userId} unido a su room`);
   });
   
   socket.on('disconnect', () => {
-    console.log('🔌 Cliente desconectado:', socket.id);
+    // Cliente desconectado
   });
 });
 
@@ -70,11 +67,9 @@ io.on('connection', (socket) => {
 if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
   setTimeout(() => {
     try {
-      console.log('🔄 Ejecutando migraciones de Prisma...');
       execSync('npx prisma migrate deploy', { stdio: 'inherit' });
-      console.log('✅ Migraciones aplicadas correctamente');
     } catch (error) {
-      console.error('❌ Error al aplicar migraciones:', error);
+      console.error('Error al aplicar migraciones');
     }
   }, 2000);
 }
@@ -94,12 +89,15 @@ app.use((req, res, next) => {
   
   // Permitir cualquier subdominio de vercel.app
   const isVercelApp = origin && origin.match(/https:\/\/.*\.vercel\.app$/);
+  // Permitir cualquier IP local en desarrollo
+  const isLocalDev = origin && origin.match(/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+):\d+$/);
   
-  if (origin && (allowedOrigins.includes(origin) || isVercelApp)) {
+  if (origin && (allowedOrigins.includes(origin) || isVercelApp || isLocalDev)) {
     res.header('Access-Control-Allow-Origin', origin);
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
@@ -137,6 +135,7 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 // Escuchar en todas las interfaces de red (0.0.0.0)
 httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor HTTP corriendo en puerto ${PORT}`);
-  console.log(`🔌 Socket.IO listo en ws://0.0.0.0:${PORT}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`Servidor corriendo en puerto ${PORT}`);
+  }
 });

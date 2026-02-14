@@ -86,8 +86,8 @@
           </div>
         </div>
 
-        <!-- Horarios -->
-        <div class="bg-white rounded-2xl shadow-xl p-4 md:p-6">
+        <!-- Horarios (ocultos en móvil) -->
+        <div class="hidden md:block bg-white rounded-2xl shadow-xl p-4 md:p-6">
           <h2 class="text-lg md:text-xl font-bold mb-4 flex items-center text-gray-800">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2 text-purple-600">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -153,31 +153,45 @@
             <p class="text-gray-500 text-lg">Este salón aún no tiene servicios disponibles</p>
           </div>
           
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <button
               v-for="service in services"
               :key="service.id"
               @click="selectService(service)"
               :class="[
-                'group relative p-4 border-2 rounded-xl transition-all duration-300 text-left',
+                'group relative p-3 md:p-4 border-2 rounded-xl transition-all duration-300 text-left',
                 selectedService?.id === service.id
-                  ? 'border-purple-600 bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl scale-105'
+                  ? 'border-purple-600 bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl md:scale-105'
                   : 'border-purple-200 hover:border-purple-400 hover:shadow-lg bg-white'
               ]"
             >
               <!-- Icono de servicio -->
-              <div class="flex items-start gap-3 mb-3">
+              <div class="flex items-center gap-2 md:gap-3">
                 <div :class="[
-                  'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
+                  'w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0',
                   selectedService?.id === service.id 
                     ? 'bg-gradient-to-br from-purple-600 to-pink-600' 
                     : 'bg-gradient-to-br from-purple-100 to-pink-100'
                 ]">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" :stroke="selectedService?.id === service.id ? 'white' : '#9333ea'" class="w-7 h-7">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" :stroke="selectedService?.id === service.id ? 'white' : '#9333ea'" class="w-6 h-6 md:w-7 md:h-7">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                   </svg>
                 </div>
-                <div class="flex-1 min-w-0">
+                
+                <!-- Móvil: Todo en columna compacta -->
+                <div class="flex-1 min-w-0 md:hidden">
+                  <h3 class="font-bold text-base text-gray-800 leading-tight mb-1">
+                    {{ service.name }}
+                  </h3>
+                  <div class="flex items-center gap-3 text-xs">
+                    <span class="text-purple-700 font-bold">€{{ service.price }}</span>
+                    <span class="text-gray-600">•</span>
+                    <span class="text-gray-600 font-medium">{{ service.duration }} min</span>
+                  </div>
+                </div>
+                
+                <!-- Desktop: Mantener estructura original -->
+                <div class="hidden md:block flex-1 min-w-0">
                   <h3 class="font-bold text-lg text-gray-800 mb-1 leading-tight">
                     {{ service.name }}
                   </h3>
@@ -185,16 +199,16 @@
                 </div>
               </div>
 
-              <!-- Info del servicio -->
-              <div class="flex items-center justify-between pt-3 border-t border-purple-100">
+              <!-- Info del servicio (solo desktop) -->
+              <div class="hidden md:flex items-center justify-between pt-3 border-t border-purple-100">
                 <div class="flex items-center gap-1 text-purple-700">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 md:w-4 md:h-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span class="font-bold text-lg">€{{ service.price }}</span>
+                  <span class="font-bold text-base md:text-lg">€{{ service.price }}</span>
                 </div>
-                <div class="flex items-center gap-1 text-gray-600 text-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                <div class="flex items-center gap-1 text-gray-600 text-xs md:text-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 md:w-4 md:h-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span class="font-semibold">{{ service.duration }} min</span>

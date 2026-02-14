@@ -129,8 +129,6 @@ export const createAppointment = async (req: Request, res: Response) => {
     userIds.forEach(userId => {
       io.to(`user_${userId}`).emit('appointment-created', { appointmentId: appointment.id });
     });
-    
-    console.log(`📡 Evento appointment-created emitido al salón ${salon.id}`);
 
     res.status(201).json(appointment);
   } catch (error) {
@@ -234,8 +232,6 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     userIds.forEach(userId => {
       io.to(`user_${userId}`).emit(eventType, { appointmentId: appointment.id, status });
     });
-    
-    console.log(`📡 Evento ${eventType} emitido al salón ${appointmentSalon.id}`);
 
     res.json(appointment);
   } catch (error) {
