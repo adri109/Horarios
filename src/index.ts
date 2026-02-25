@@ -14,7 +14,6 @@ import workerRoutes from './routes/workerRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import dotenv from 'dotenv';
-import { execSync } from 'child_process';
 
 dotenv.config();
 
@@ -62,17 +61,6 @@ io.on('connection', (socket) => {
     // Cliente desconectado
   });
 });
-
-// Ejecutar migraciones en producción DESPUÉS de iniciar el servidor
-if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
-  setTimeout(() => {
-    try {
-      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
-    } catch (error) {
-      console.error('Error al aplicar migraciones');
-    }
-  }, 2000);
-}
 
 // CORS configuración
 const allowedOrigins = process.env.FRONTEND_URL 

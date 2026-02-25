@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSalonSlots = exports.getSalonBySlug = void 0;
+exports.updateSalonInfo = exports.getSalonSlots = exports.getSalonBySlug = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 const getSalonBySlug = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -94,3 +94,33 @@ const getSalonSlots = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.getSalonSlots = getSalonSlots;
+const updateSalonInfo = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = req.userId;
+        const { name, address, city, phone, description } = req.body;
+        // Buscar el salón del usuario admin
+        const salon = yield prisma.salon.findFirst({
+            where: { adminId: userId }
+        });
+        if (!salon) {
+            return res.status(404).json({ error: 'Salón no encontrado' });
+        }
+        // Actualizar información del salón
+        const updatedSalon = yield prisma.salon.update({
+            where: { id: salon.id },
+            data: {
+                name: name || salon.name,
+                address: address || salon.address,
+                city: city || salon.city,
+                phone: phone || salon.phone,
+                description: description || salon.description
+            }
+        });
+        res.json(updatedSalon);
+    }
+    catch (error) {
+        console.error('Error actualizando información del salón:', error);
+        res.status(500).json({ error: 'Error actualizando información' });
+    }
+});
+exports.updateSalonInfo = updateSalonInfo;

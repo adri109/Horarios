@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createNotification = exports.markAllAsRead = exports.markAsRead = exports.getUnreadNotifications = exports.getNotifications = void 0;
 const client_1 = require("@prisma/client");
+const index_1 = require("../index");
 const prisma = new client_1.PrismaClient();
 // Obtener todas las notificaciones del usuario
 const getNotifications = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -116,6 +117,9 @@ const createNotification = (userId, message, type) => __awaiter(void 0, void 0, 
                 read: false
             }
         });
+        // Emitir evento WebSocket al usuario específico
+        index_1.io.to(`user_${userId}`).emit('new-notification', notification);
+        console.log(`📡 Notificación emitida via WebSocket a user_${userId}`);
         return notification;
     }
     catch (error) {

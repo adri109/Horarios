@@ -16,7 +16,7 @@ const notificationController_1 = require("../controllers/notificationController"
 const prisma = new client_1.PrismaClient();
 // Obtener los datos públicos del salón y servicios
 const getSalonPublic = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b, _c, _d;
     const { slug } = req.params;
     try {
         const salon = yield prisma.salon.findUnique({
@@ -24,6 +24,7 @@ const getSalonPublic = (req, res) => __awaiter(void 0, void 0, void 0, function*
             include: {
                 services: true,
                 config: true, // incluimos config para horarios
+                schedules: true, // incluir horarios semanales
             },
         });
         if (!salon)
@@ -49,6 +50,11 @@ const getSalonPublic = (req, res) => __awaiter(void 0, void 0, void 0, function*
             salon,
             services: salon.services,
             availableSlots, // slots generados automáticamente
+            customization: {
+                background: ((_b = salon.config) === null || _b === void 0 ? void 0 : _b.publicPageBackground) || 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100',
+                primaryColor: ((_c = salon.config) === null || _c === void 0 ? void 0 : _c.publicPagePrimaryColor) || '#9333ea',
+                secondaryColor: ((_d = salon.config) === null || _d === void 0 ? void 0 : _d.publicPageSecondaryColor) || '#ec4899'
+            }
         });
     }
     catch (error) {

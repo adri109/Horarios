@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateAppointmentStatus = exports.createAppointment = exports.getAppointmentById = exports.getAllAppointments = void 0;
 const client_1 = require("@prisma/client");
+const index_1 = require("../index");
 const prisma = new client_1.PrismaClient();
 const getAllAppointments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -106,6 +107,24 @@ const createAppointment = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 startTime: new Date(startTime),
                 endTime: new Date(endTime),
             },
+            include: {
+                service: {
+                    include: {
+                        salon: {
+                            include: {
+                                admin: true,
+                                workers: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        // Emitir evento WebSocket a todos los usuarios del salón
+        const salon = appointment.service.salon;
+        const userIds = [salon.adminId, ...salon.workers.map(w => w.id)];
+        userIds.forEach(userId => {
+            index_1.io.to(`user_${userId}`).emit('appointment-created', { appointmentId: appointment.id });
         });
         res.status(201).json(appointment);
     }
@@ -177,6 +196,25 @@ const updateAppointmentStatus = (req, res) => __awaiter(void 0, void 0, void 0, 
         const appointment = yield prisma.appointment.update({
             where: { id: Number(id) },
             data: { status },
+            include: {
+                service: {
+                    include: {
+                        salon: {
+                            include: {
+                                admin: true,
+                                workers: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        // Emitir evento WebSocket
+        const appointmentSalon = appointment.service.salon;
+        const userIds = [appointmentSalon.adminId, ...appointmentSalon.workers.map(w => w.id)];
+        const eventType = status === 'CANCELLED' ? 'appointment-cancelled' : 'appointment-updated';
+        userIds.forEach(userId => {
+            index_1.io.to(`user_${userId}`).emit(eventType, { appointmentId: appointment.id, status });
         });
         res.json(appointment);
     }

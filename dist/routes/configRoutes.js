@@ -16,4 +16,6 @@ router.delete('/schedules/:id', configController_1.deleteSchedule);
 // Bloqueos de fechas
 router.post('/blocks', configController_1.createBlock);
 router.delete('/blocks/:id', configController_1.deleteBlock);
+// Personalización de página pública
+router.put('/public-customization', configController_1.updatePublicPageCustomization);
 exports.default = router;

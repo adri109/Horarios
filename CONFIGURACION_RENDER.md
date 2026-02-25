@@ -23,7 +23,7 @@ En Render, abre el servicio y completa estos valores:
 1. Pulsa **Manual Deploy** (o espera el autodeploy).
 2. Render ejecutará:
    - Build: `npm ci && npx prisma generate && npm run build`
-   - Start: `npm start`
+   - Start: `npx prisma migrate deploy && npm start`
 3. El health check debe responder en `/health`.
 
 ## 4) Verificación rápida
@@ -34,5 +34,10 @@ En Render, abre el servicio y completa estos valores:
 ## 5) Notas importantes
 
 - El backend usa `PORT` inyectado por Render automáticamente.
-- Las migraciones de Prisma se aplican en arranque de producción desde `src/index.ts`.
+- Las migraciones de Prisma se aplican antes de arrancar el servidor (`startCommand` en Render).
 - Si falla por conexión de base de datos, revisa `DATABASE_URL` y `DIRECT_URL`.
+
+## 6) Preparación para Vercel (siguiente paso)
+
+- Cuando despliegues frontend en Vercel, copia su URL pública en `FRONTEND_URL` del backend en Render.
+- En Vercel, define `VUE_APP_API_URL` apuntando a `https://<tu-servicio-render>.onrender.com`.

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteBlock = exports.createBlock = exports.deleteSchedule = exports.updateSchedule = exports.createSchedule = exports.updateConfig = exports.getConfig = void 0;
+exports.updatePublicPageCustomization = exports.deleteBlock = exports.createBlock = exports.deleteSchedule = exports.updateSchedule = exports.createSchedule = exports.updateConfig = exports.getConfig = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 // Obtener toda la configuración del salón (config + horarios + bloqueos)
@@ -60,7 +60,14 @@ const getConfig = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.json({
             config,
             schedules,
-            blocks
+            blocks,
+            salon: {
+                name: salon.name,
+                address: salon.address,
+                city: salon.city,
+                phone: salon.phone,
+                description: salon.description
+            }
         });
     }
     catch (error) {
@@ -73,7 +80,7 @@ exports.getConfig = getConfig;
 const updateConfig = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userId = req.user.userId;
-        const { requireConfirmation, workersCanCreateServices, canAcceptAppointments, canModifyAppointments, openingTime, closingTime, serviceIntervalMinutes } = req.body;
+        const { canAcceptAppointments, openingTime, closingTime, serviceIntervalMinutes } = req.body;
         const salon = yield prisma.salon.findFirst({
             where: {
                 OR: [
@@ -88,20 +95,14 @@ const updateConfig = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         const config = yield prisma.config.upsert({
             where: { salonId: salon.id },
             update: {
-                requireConfirmation,
-                workersCanCreateServices,
                 canAcceptAppointments,
-                canModifyAppointments,
                 openingTime,
                 closingTime,
                 serviceIntervalMinutes
             },
             create: {
                 salonId: salon.id,
-                requireConfirmation,
-                workersCanCreateServices,
                 canAcceptAppointments,
-                canModifyAppointments,
                 openingTime,
                 closingTime,
                 serviceIntervalMinutes
@@ -133,6 +134,30 @@ const createSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
         }
         if (dayOfWeek < 0 || dayOfWeek > 6) {
             return res.status(400).json({ error: 'El día de la semana debe estar entre 0 (domingo) y 6 (sábado)' });
+        }
+        // Validar que la hora de cierre sea posterior a la de apertura
+        if (openingTime >= closingTime && !isClosed) {
+            return res.status(400).json({ error: 'La hora de cierre debe ser posterior a la hora de apertura' });
+        }
+        // Validar que no se solape con horarios existentes del mismo día
+        if (!isClosed) {
+            const existingSchedules = yield prisma.salonSchedule.findMany({
+                where: {
+                    salonId: salon.id,
+                    dayOfWeek,
+                    isClosed: false
+                }
+            });
+            // Verificar solapamientos
+            for (const schedule of existingSchedules) {
+                // Solapamiento si el nuevo horario empieza antes de que termine uno existente Y termina después de que empiece
+                const hasOverlap = ((openingTime < schedule.closingTime && closingTime > schedule.openingTime));
+                if (hasOverlap) {
+                    return res.status(400).json({
+                        error: `El horario se solapa con un horario existente (${schedule.openingTime} - ${schedule.closingTime}). El nuevo horario debe comenzar como mínimo a las ${schedule.closingTime}`
+                    });
+                }
+            }
         }
         const schedule = yield prisma.salonSchedule.create({
             data: {
@@ -173,6 +198,30 @@ const updateSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
         });
         if (!schedule || schedule.salonId !== salon.id) {
             return res.status(404).json({ error: 'Horario no encontrado' });
+        }
+        // Validar que la hora de cierre sea posterior a la de apertura
+        if (openingTime >= closingTime && !isClosed) {
+            return res.status(400).json({ error: 'La hora de cierre debe ser posterior a la hora de apertura' });
+        }
+        // Validar que no se solape con otros horarios del mismo día (excluyendo el actual)
+        if (!isClosed) {
+            const existingSchedules = yield prisma.salonSchedule.findMany({
+                where: {
+                    salonId: salon.id,
+                    dayOfWeek: schedule.dayOfWeek,
+                    isClosed: false,
+                    id: { not: parseInt(id) } // Excluir el horario que estamos actualizando
+                }
+            });
+            // Verificar solapamientos
+            for (const existingSchedule of existingSchedules) {
+                const hasOverlap = ((openingTime < existingSchedule.closingTime && closingTime > existingSchedule.openingTime));
+                if (hasOverlap) {
+                    return res.status(400).json({
+                        error: `El horario se solapa con otro horario existente (${existingSchedule.openingTime} - ${existingSchedule.closingTime})`
+                    });
+                }
+            }
         }
         const updated = yield prisma.salonSchedule.update({
             where: { id: parseInt(id) },
@@ -289,3 +338,50 @@ const deleteBlock = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.deleteBlock = deleteBlock;
+// Actualizar personalización de la página pública
+const updatePublicPageCustomization = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = req.user.userId;
+        const { publicPageBackground, publicPagePrimaryColor, publicPageSecondaryColor } = req.body;
+        // Buscar el salón del usuario (debe ser admin)
+        const salon = yield prisma.salon.findFirst({
+            where: { adminId: userId }
+        });
+        if (!salon) {
+            return res.status(403).json({ error: 'Solo el administrador puede personalizar la página pública' });
+        }
+        // Obtener o crear config
+        let config = yield prisma.config.findUnique({
+            where: { salonId: salon.id }
+        });
+        if (!config) {
+            config = yield prisma.config.create({
+                data: {
+                    salonId: salon.id,
+                    publicPageBackground,
+                    publicPagePrimaryColor,
+                    publicPageSecondaryColor
+                }
+            });
+        }
+        else {
+            config = yield prisma.config.update({
+                where: { salonId: salon.id },
+                data: {
+                    publicPageBackground,
+                    publicPagePrimaryColor,
+                    publicPageSecondaryColor
+                }
+            });
+        }
+        res.json({
+            message: 'Personalización guardada correctamente',
+            config
+        });
+    }
+    catch (error) {
+        console.error('Error actualizando personalización:', error);
+        res.status(500).json({ error: 'Error al guardar la personalización' });
+    }
+});
+exports.updatePublicPageCustomization = updatePublicPageCustomization;

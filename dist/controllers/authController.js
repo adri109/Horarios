@@ -125,9 +125,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
         // 3️⃣ Generar token JWT
-        console.log('🔑 Creando token para userId:', user.id, 'role:', user.role);
         const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
-        console.log('✅ Token creado exitosamente');
         // 4️⃣ Devolver datos de usuario + token + permisos
         res.json({
             token,
