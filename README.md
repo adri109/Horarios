@@ -69,8 +69,14 @@ cd ..
 Crea un archivo `.env` en la raíz del proyecto:
 
 ```env
-# Base de datos PostgreSQL
+# Base de datos PostgreSQL (local)
 DATABASE_URL="postgresql://usuario:contraseña@localhost:5432/nombre_db"
+
+# Supabase (producción con Prisma)
+# Runtime (pooler)
+# DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require"
+# Migraciones (directa)
+# DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?sslmode=require"
 
 # Seguridad JWT
 JWT_SECRET="cadena_muy_larga_y_segura_aleatoria"
@@ -106,6 +112,13 @@ CREATE DATABASE nombre_db;
 npx prisma migrate deploy
 npx prisma generate
 ```
+
+#### 🔗 Configuración recomendada para Supabase + Prisma
+
+- Usa `DATABASE_URL` con el **Connection Pooler** de Supabase (puerto 6543) para ejecución normal.
+- Usa `DIRECT_URL` con la conexión **directa** de Supabase (puerto 5432) para migraciones.
+- En producción (Render), configura ambas variables en el panel de entorno.
+- Para aplicar migraciones en producción: `npx prisma migrate deploy`.
 
 **Opcional - Ver la base de datos:**
 ```bash
@@ -270,6 +283,7 @@ npx prisma studio              # Interfaz visual de BD
 ### Error de conexión a la base de datos
 - Verifica que PostgreSQL esté corriendo
 - Comprueba la `DATABASE_URL` en `.env`
+- Si usas Supabase, verifica también `DIRECT_URL` y que ambas tengan `sslmode=require`
 - Asegúrate de que la base de datos existe
 
 ### Error "JWT_SECRET not defined"
