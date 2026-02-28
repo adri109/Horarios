@@ -60,12 +60,23 @@ router.put('/:id/read', notificationController_1.markAsRead);
 // PUT /notifications/read-all - Marcar todas como leídas
 router.put('/read-all', notificationController_1.markAllAsRead);
 // POST /notifications/test - Crear notificaciones de prueba (temporal)
-router.post('/test', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const userId = req.user.userId;
-    const { createNotification } = yield Promise.resolve().then(() => __importStar(require('../controllers/notificationController')));
-    yield createNotification(userId, 'Tienes una cita mañana a las 10:00 AM con Juan Pérez', 'REMINDER');
-    yield createNotification(userId, 'Nueva promoción: 20% de descuento en todos los servicios', 'PROMOTION');
-    yield createNotification(userId, 'El cliente María López ha cancelado su cita', 'CANCELLATION');
-    res.json({ message: 'Notificaciones de prueba creadas' });
+router.post('/test', (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        if (process.env.NODE_ENV === 'production') {
+            return res.status(404).json({ error: 'Ruta no disponible' });
+        }
+        if (((_a = req.user) === null || _a === void 0 ? void 0 : _a.role) !== 'ADMIN' || !req.userId) {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+        const { createNotification } = yield Promise.resolve().then(() => __importStar(require('../controllers/notificationController')));
+        yield createNotification(req.userId, 'Tienes una cita mañana a las 10:00 AM con Juan Pérez', 'REMINDER');
+        yield createNotification(req.userId, 'Nueva promoción: 20% de descuento en todos los servicios', 'PROMOTION');
+        yield createNotification(req.userId, 'El cliente María López ha cancelado su cita', 'CANCELLATION');
+        res.json({ message: 'Notificaciones de prueba creadas' });
+    }
+    catch (error) {
+        next(error);
+    }
 }));
 exports.default = router;

@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-
-export interface AuthRequest extends Request {
-  user?: any; // aquí guardaremos los datos del usuario después de validar el token
-}
+import { AuthRequest, AuthUserPayload } from '../types/auth';
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) {
+    return res.status(500).json({ error: 'Configuración de autenticación inválida' });
+  }
+
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // si viene "Bearer TOKEN"
 
@@ -13,14 +16,15 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     return res.status(401).json({ error: 'No autenticado' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret', (err, decoded: any) => {
+  jwt.verify(token, jwtSecret, (err, decoded) => {
     if (err) {
       return res.status(403).json({ error: 'Token inválido' });
     }
-    
-    req.user = decoded;
-    (req as any).userId = decoded.userId; // Para compatibilidad con controllers que usan req.userId
-    (req as any).userRole = decoded.role; // Agregar rol para verificación de permisos
+
+    const payload = decoded as AuthUserPayload;
+    req.user = payload;
+    req.userId = payload.userId;
+    req.userRole = payload.role;
     next();
   });
 };

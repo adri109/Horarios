@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Obtener todos los clientes de un salón con estadísticas
 export const getClients = async (req: Request, res: Response) => {

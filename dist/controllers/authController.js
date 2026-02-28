@@ -13,13 +13,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resetPassword = exports.forgotPassword = exports.login = exports.register = void 0;
-const client_1 = require("@prisma/client");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const slugify_1 = __importDefault(require("slugify"));
 const crypto_1 = __importDefault(require("crypto"));
 const nodemailer_1 = __importDefault(require("nodemailer"));
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
 // Configurar transporte de email
 const transporter = nodemailer_1.default.createTransport({
     service: 'gmail',
@@ -32,17 +31,21 @@ const transporter = nodemailer_1.default.createTransport({
 // REGISTER
 // ==========================
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+        return res.status(500).json({ error: 'Configuración de autenticación inválida' });
+    }
     const { email, password, fullName, phone, salonName, salonAddress, salonPhone, config, } = req.body;
     try {
         // 1️⃣ Verificar si el usuario ya existe
-        const existingUser = yield prisma.user.findUnique({ where: { email } });
+        const existingUser = yield prisma_1.default.user.findUnique({ where: { email } });
         if (existingUser) {
             return res.status(400).json({ error: 'El email ya está registrado' });
         }
         // 2️⃣ Hashear la contraseña
         const hashedPassword = yield bcrypt_1.default.hash(password, 10);
         // 3️⃣ Crear el usuario ADMIN
-        const user = yield prisma.user.create({
+        const user = yield prisma_1.default.user.create({
             data: {
                 email,
                 password: hashedPassword,
@@ -53,7 +56,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         const slug = (0, slugify_1.default)(salonName, { lower: true, strict: true });
         // 4️⃣ Crear el salón asociado al usuario
-        const salon = yield prisma.salon.create({
+        const salon = yield prisma_1.default.salon.create({
             data: {
                 name: salonName,
                 address: salonAddress || null,
@@ -64,7 +67,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         // 5️⃣ Crear configuración del salón si se proporciona
         if (config) {
-            yield prisma.config.create({
+            yield prisma_1.default.config.create({
                 data: {
                     salonId: salon.id,
                     requireConfirmation: config.requireConfirmation || false,
@@ -77,7 +80,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             });
         }
         // 6️⃣ Crear token JWT
-        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
+        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, jwtSecret, { expiresIn: '1h' });
         // 7️⃣ Devolver respuesta con usuario + salón
         res.status(201).json({
             token,
@@ -109,10 +112,14 @@ exports.register = register;
 // LOGIN
 // ==========================
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+        return res.status(500).json({ error: 'Configuración de autenticación inválida' });
+    }
     const { email, password } = req.body;
     try {
         // 1️⃣ Buscar usuario por email e incluir el salón si existe
-        const user = yield prisma.user.findUnique({
+        const user = yield prisma_1.default.user.findUnique({
             where: { email },
             include: { salon: true, worksAt: true },
         });
@@ -125,7 +132,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
         // 3️⃣ Generar token JWT
-        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
+        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, jwtSecret, { expiresIn: '1h' });
         // 4️⃣ Devolver datos de usuario + token + permisos
         res.json({
             token,
@@ -171,7 +178,7 @@ const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
     const { email } = req.body;
     try {
         // 1️⃣ Buscar usuario por email
-        const user = yield prisma.user.findUnique({ where: { email } });
+        const user = yield prisma_1.default.user.findUnique({ where: { email } });
         // No revelar si el email existe o no por seguridad
         if (!user) {
             return res.json({ message: 'Si el email existe, recibirás un correo de restablecimiento' });
@@ -180,7 +187,7 @@ const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
         const resetToken = crypto_1.default.randomBytes(32).toString('hex');
         const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hora
         // 3️⃣ Guardar token en base de datos
-        yield prisma.user.update({
+        yield prisma_1.default.user.update({
             where: { id: user.id },
             data: {
                 resetToken,
@@ -222,7 +229,7 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     const { token, newPassword } = req.body;
     try {
         // 1️⃣ Buscar usuario con el token válido
-        const user = yield prisma.user.findFirst({
+        const user = yield prisma_1.default.user.findFirst({
             where: {
                 resetToken: token,
                 resetTokenExpiry: { gt: new Date() },
@@ -234,7 +241,7 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         // 2️⃣ Hashear nueva contraseña
         const hashedPassword = yield bcrypt_1.default.hash(newPassword, 10);
         // 3️⃣ Actualizar contraseña y limpiar token
-        yield prisma.user.update({
+        yield prisma_1.default.user.update({
             where: { id: user.id },
             data: {
                 password: hashedPassword,

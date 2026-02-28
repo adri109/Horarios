@@ -1,17 +1,17 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Response } from 'express';
+import prisma from '../utils/prisma';
+import { AuthRequest } from '../types/auth';
+import logger from '../utils/logger';
 
 // Obtener todos los servicios del salón del usuario autenticado
-export const getAllServices = async (req: Request, res: Response) => {
+export const getAllServices = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     
-    console.log('📋 getAllServices - userId:', userId);
+    logger.debug({ userId }, 'getAllServices');
     
     if (!userId) {
-      console.log('❌ No hay userId en la request');
+      logger.warn('No hay userId en la request');
       return res.status(401).json({ error: 'No autenticado' });
     }
 
@@ -25,10 +25,10 @@ export const getAllServices = async (req: Request, res: Response) => {
       }
     });
 
-    console.log('🏢 Salón encontrado:', salon ? `ID: ${salon.id}, Nombre: ${salon.name}` : 'NULL');
+    logger.debug({ salonId: salon?.id, salonName: salon?.name }, 'Salón encontrado para servicios');
 
     if (!salon) {
-      console.log('❌ Usuario no tiene salón asociado');
+      logger.warn({ userId }, 'Usuario no tiene salón asociado');
       return res.status(404).json({ error: 'No tienes un salón asociado' });
     }
 
@@ -38,20 +38,42 @@ export const getAllServices = async (req: Request, res: Response) => {
       orderBy: { name: 'asc' },
     });
     
-    console.log('✅ Servicios encontrados:', services.length);
+    logger.debug({ userId, count: services.length }, 'Servicios encontrados');
     res.json(services);
   } catch (error) {
-    console.error('❌ Error obteniendo servicios:', error);
+    logger.error({ error }, 'Error obteniendo servicios');
     res.status(500).json({ error: 'Error obteniendo servicios' });
   }
 };
 
 // Obtener un servicio por ID
-export const getServiceById = async (req: Request, res: Response) => {
+export const getServiceById = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   try {
-    const service = await prisma.service.findUnique({
-      where: { id: Number(id) },
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const salon = await prisma.salon.findFirst({
+      where: {
+        OR: [
+          { adminId: userId },
+          { workers: { some: { id: userId } } }
+        ]
+      }
+    });
+
+    if (!salon) {
+      return res.status(404).json({ error: 'No tienes un salón asociado' });
+    }
+
+    const service = await prisma.service.findFirst({
+      where: {
+        id: Number(id),
+        salonId: salon.id,
+      },
     });
 
     if (!service) {
@@ -60,38 +82,57 @@ export const getServiceById = async (req: Request, res: Response) => {
 
     res.json(service);
   } catch (error) {
+    logger.error({ error }, 'Error obteniendo servicio');
     res.status(500).json({ error: 'Error obteniendo servicio' });
   }
 };
 
 // Crear un servicio
-export const createService = async (req: Request, res: Response) => {
-  const { name, description, duration, price, salonId } = req.body;
+export const createService = async (req: AuthRequest, res: Response) => {
+  const { name, description, duration, price } = req.body;
 
   try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const salon = await prisma.salon.findFirst({
+      where: {
+        OR: [
+          { adminId: userId },
+          { workers: { some: { id: userId } } }
+        ]
+      }
+    });
+
+    if (!salon) {
+      return res.status(404).json({ error: 'No tienes un salón asociado' });
+    }
+
     const service = await prisma.service.create({
       data: {
         name,
         description,
         duration,
         price,
-        salon: {
-          connect: { id: Number(salonId) },
-        }
+        salonId: salon.id,
       },
     });
 
     res.status(201).json(service);
   } catch (error) {
+    logger.error({ error }, 'Error creando servicio');
     res.status(500).json({ error: 'Error creando servicio' });
   }
 };
 
 // Actualizar un servicio (solo del salón del usuario)
-export const updateService = async (req: Request, res: Response) => {
+export const updateService = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { name, description, duration, price } = req.body;
-  const userId = (req as any).userId;
+  const userId = req.userId;
 
   try {
     if (!userId) {
@@ -131,15 +172,15 @@ export const updateService = async (req: Request, res: Response) => {
 
     res.json(service);
   } catch (error) {
-    console.error('Error actualizando servicio:', error);
+    logger.error({ error }, 'Error actualizando servicio');
     res.status(500).json({ error: 'Error actualizando servicio' });
   }
 };
 
 // Eliminar un servicio (solo del salón del usuario)
-export const deleteService = async (req: Request, res: Response) => {
+export const deleteService = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const userId = (req as any).userId;
+  const userId = req.userId;
 
   try {
     if (!userId) {
@@ -175,7 +216,7 @@ export const deleteService = async (req: Request, res: Response) => {
     await prisma.service.delete({ where: { id: Number(id) } });
     res.status(204).send();
   } catch (error) {
-    console.error('Error eliminando servicio:', error);
+    logger.error({ error }, 'Error eliminando servicio');
     res.status(500).json({ error: 'Error eliminando servicio' });
   }
 };

@@ -8,17 +8,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateAppointmentStatus = exports.getDashboardStats = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
 // Obtener estadísticas del dashboard
 const getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
         const userId = req.user.userId;
         // Obtener el salón del usuario
-        const user = yield prisma.user.findUnique({
+        const user = yield prisma_1.default.user.findUnique({
             where: { id: userId },
             include: {
                 salon: true,
@@ -40,7 +42,7 @@ const getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, functi
         weekStart.setDate(weekStart.getDate() - 7);
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         // Cita actual y próxima
-        const currentAndNext = yield prisma.appointment.findMany({
+        const currentAndNext = yield prisma_1.default.appointment.findMany({
             where: {
                 service: { salonId },
                 startTime: { gte: todayStart },
@@ -61,7 +63,7 @@ const getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, functi
         }) || null;
         const nextAppointment = currentAndNext.find(apt => new Date(apt.startTime) > now) || null;
         // Citas de hoy
-        const todayAppointments = yield prisma.appointment.findMany({
+        const todayAppointments = yield prisma_1.default.appointment.findMany({
             where: {
                 service: { salonId },
                 startTime: { gte: todayStart, lt: todayEnd }
@@ -71,7 +73,7 @@ const getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, functi
         const todayCancelled = todayAppointments.filter(a => a.status === 'CANCELLED').length;
         const todayPending = todayAppointments.filter(a => a.status === 'PENDING' || a.status === 'CONFIRMED').length;
         // Ingresos de hoy
-        const todayRevenue = yield prisma.appointment.findMany({
+        const todayRevenue = yield prisma_1.default.appointment.findMany({
             where: {
                 service: { salonId },
                 startTime: { gte: todayStart, lt: todayEnd },
@@ -81,7 +83,7 @@ const getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, functi
         });
         const revenueToday = todayRevenue.reduce((sum, apt) => sum + apt.service.price, 0);
         // Ingresos del mes
-        const monthRevenue = yield prisma.appointment.findMany({
+        const monthRevenue = yield prisma_1.default.appointment.findMany({
             where: {
                 service: { salonId },
                 startTime: { gte: monthStart },
@@ -91,7 +93,7 @@ const getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, functi
         });
         const revenueMonth = monthRevenue.reduce((sum, apt) => sum + apt.service.price, 0);
         // Nuevos clientes
-        const clientsToday = yield prisma.client.findMany({
+        const clientsToday = yield prisma_1.default.client.findMany({
             where: {
                 salonId,
                 appointments: {
@@ -111,7 +113,7 @@ const getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, functi
             const firstAppointment = client.appointments[0];
             return firstAppointment && new Date(firstAppointment.startTime) >= todayStart;
         }).length;
-        const clientsWeek = yield prisma.client.findMany({
+        const clientsWeek = yield prisma_1.default.client.findMany({
             where: {
                 salonId,
                 appointments: {
@@ -131,7 +133,7 @@ const getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, functi
             const firstAppointment = client.appointments[0];
             return firstAppointment && new Date(firstAppointment.startTime) >= weekStart;
         }).length;
-        const clientsMonth = yield prisma.client.findMany({
+        const clientsMonth = yield prisma_1.default.client.findMany({
             where: {
                 salonId,
                 appointments: {
@@ -158,7 +160,7 @@ const getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, functi
             dayStart.setDate(dayStart.getDate() - i);
             const dayEnd = new Date(dayStart);
             dayEnd.setDate(dayEnd.getDate() + 1);
-            const dayRevenue = yield prisma.appointment.findMany({
+            const dayRevenue = yield prisma_1.default.appointment.findMany({
                 where: {
                     service: { salonId },
                     startTime: { gte: dayStart, lt: dayEnd },
@@ -174,7 +176,7 @@ const getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, functi
             });
         }
         // Servicios más populares del mes
-        const monthAppointments = yield prisma.appointment.findMany({
+        const monthAppointments = yield prisma_1.default.appointment.findMany({
             where: {
                 service: { salonId },
                 startTime: { gte: monthStart },
@@ -235,7 +237,7 @@ const updateAppointmentStatus = (req, res) => __awaiter(void 0, void 0, void 0, 
             return res.status(400).json({ error: 'Estado inválido' });
         }
         // Verificar que la cita pertenece al salón del usuario
-        const user = yield prisma.user.findUnique({
+        const user = yield prisma_1.default.user.findUnique({
             where: { id: userId },
             include: {
                 salon: true,
@@ -249,7 +251,7 @@ const updateAppointmentStatus = (req, res) => __awaiter(void 0, void 0, void 0, 
         if (!salonId) {
             return res.status(404).json({ error: 'No tienes un salón asociado' });
         }
-        const appointment = yield prisma.appointment.findFirst({
+        const appointment = yield prisma_1.default.appointment.findFirst({
             where: {
                 id: appointmentId,
                 service: { salonId }
@@ -259,7 +261,7 @@ const updateAppointmentStatus = (req, res) => __awaiter(void 0, void 0, void 0, 
             return res.status(404).json({ error: 'Cita no encontrada' });
         }
         // Actualizar el estado
-        const updatedAppointment = yield prisma.appointment.update({
+        const updatedAppointment = yield prisma_1.default.appointment.update({
             where: { id: appointmentId },
             data: { status },
             include: {

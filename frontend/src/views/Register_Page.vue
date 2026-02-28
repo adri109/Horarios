@@ -9,10 +9,10 @@
           <i class="fas fa-cut text-2xl md:text-4xl text-purple-600"></i>
         </div>
         <h1 class="text-3xl md:text-5xl font-bold text-white mb-3 md:mb-4 animate-pulse-slow">
-          SalonPro
+          {{ BRAND.appName }}
         </h1>
         <p class="text-purple-100 text-base md:text-xl max-w-2xl mx-auto px-4">
-          Transforma tu peluquería con la plataforma de gestión más avanzada
+          Transforma tu {{ BRAND.categoryLabel.toLowerCase() }} con la plataforma de gestión más avanzada
         </p>
       </div>
 
@@ -361,7 +361,8 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue';
-import axios from '@/utils/axios';
+import { registerRequest } from '@/domains/auth/api/authApi';
+import { BRAND } from '@/config/branding';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -484,9 +485,7 @@ async function handleSubmit() {
 
     console.log('📤 Enviando datos al backend:', payload);
 
-    const { data } = await axios.post('/auth/register', payload, {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const { data } = await registerRequest(payload);
 
     console.log('✅ Respuesta del backend:', data);
 

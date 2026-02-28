@@ -1,8 +1,14 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from '@/utils/axios';
+import {
+  fetchNotificationsRequest,
+  markAllNotificationsAsReadRequest,
+  markNotificationAsReadRequest,
+} from '@/domains/notifications/api/notificationsApi';
 import { useSocket } from '@/composables/useSocket';
+import BaseButton from '@/components/ui/BaseButton.vue';
+import { BRAND } from '@/config/branding';
 
 const router = useRouter();
 const { on, off } = useSocket();
@@ -14,8 +20,6 @@ const dropdownMenu = ref(null);
 const user = JSON.parse(localStorage.getItem('user'));
 const salonSlug = user?.salonSlug || null;
 const salonName = user?.salonName || user?.salon?.name || 'Mi Salón';
-
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 
 console.log(user.name);
 
@@ -54,10 +58,7 @@ async function toggleNotificationDropdown() {
 // Cargar notificaciones
 const fetchNotifications = async () => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/notifications`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await fetchNotificationsRequest();
     notifications.value = response.data;
   } catch (error) {
     console.error('❌ Error cargando notificaciones:', error);
@@ -67,10 +68,7 @@ const fetchNotifications = async () => {
 // Marcar notificación como leída
 const markAsRead = async (notificationId) => {
   try {
-    const token = localStorage.getItem('token');
-    await axios.put(`${API_URL}/notifications/${notificationId}/read`, {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await markNotificationAsReadRequest(notificationId);
     
     // Actualizar localmente
     const notification = notifications.value.find(n => n.id === notificationId);
@@ -85,10 +83,7 @@ const markAsRead = async (notificationId) => {
 // Marcar todas como leídas
 const markAllAsRead = async () => {
   try {
-    const token = localStorage.getItem('token');
-    await axios.put(`${API_URL}/notifications/read-all`, {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await markAllNotificationsAsReadRequest();
     
     // Actualizar localmente
     notifications.value.forEach(n => n.read = true);
@@ -185,7 +180,7 @@ onBeforeUnmount(() => {
       <div class="flex justify-between h-16">
         <div class="flex items-center space-x-3">
           <h2 class="text-2xl font-semibold text-gray-800" id="page-title">
-            Dashboard
+            {{ BRAND.dashboardLabel }}
           </h2>
           <span class="text-gray-500 text-lg font-medium">|</span>
           <h3 class="text-lg font-semibold text-blue-600">
@@ -237,13 +232,15 @@ onBeforeUnmount(() => {
                 <p class="text-gray-700 text-sm font-semibold">
                   Notificaciones
                 </p>
-                <button
+                <BaseButton
                   v-if="unreadCount > 0"
                   @click="markAllAsRead"
-                  class="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  variant="ghost"
+                  size="sm"
+                  class="text-xs"
                 >
                   Marcar todas como leídas
-                </button>
+                </BaseButton>
               </div>
               
               <div v-if="notifications.length === 0" class="py-8 text-center">
@@ -381,13 +378,16 @@ onBeforeUnmount(() => {
               </div>
 
               <div class="border-t border-gray-100 py-2">
-                <button
+                <BaseButton
                   @click="logout"
-                  class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150 text-left"
+                  variant="danger"
+                  size="sm"
+                  full-width
+                  class="justify-start text-left"
                 >
                   <i data-lucide="log-out" class="w-4 h-4 mr-3"></i>
                   Cerrar Sesión
-                </button>
+                </BaseButton>
               </div>
             </div>
           </div>

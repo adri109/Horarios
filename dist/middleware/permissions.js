@@ -8,25 +8,27 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkAnyPermission = exports.checkPermission = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
+const logger_1 = __importDefault(require("../utils/logger"));
 // Middleware para verificar permisos específicos
 const checkPermission = (permission) => {
     return (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const userId = req.userId;
         const userRole = req.userRole;
-        console.log('🔒 Verificando permiso:', permission);
-        console.log('👤 UserId:', userId, 'Role:', userRole);
+        logger_1.default.debug({ permission, userId, userRole }, 'Verificando permiso');
         try {
             // ADMIN siempre tiene todos los permisos
             if (userRole === 'ADMIN') {
-                console.log('✅ ADMIN - Permiso concedido automáticamente');
+                logger_1.default.debug({ permission, userId }, 'Permiso concedido automáticamente por rol ADMIN');
                 return next();
             }
             // Para WORKER, verificar el permiso específico
-            const user = yield prisma.user.findUnique({
+            const user = yield prisma_1.default.user.findUnique({
                 where: { id: userId },
                 select: {
                     canViewClients: true,
@@ -61,7 +63,7 @@ const checkPermission = (permission) => {
             next();
         }
         catch (error) {
-            console.error('Error al verificar permisos:', error);
+            logger_1.default.error({ error, permission, userId }, 'Error al verificar permisos');
             res.status(500).json({ error: 'Error al verificar permisos' });
         }
     });
@@ -77,7 +79,7 @@ const checkAnyPermission = (...permissions) => {
             if (userRole === 'ADMIN') {
                 return next();
             }
-            const user = yield prisma.user.findUnique({
+            const user = yield prisma_1.default.user.findUnique({
                 where: { id: userId },
                 select: {
                     canViewClients: true,
@@ -112,7 +114,7 @@ const checkAnyPermission = (...permissions) => {
             next();
         }
         catch (error) {
-            console.error('Error al verificar permisos:', error);
+            logger_1.default.error({ error, permissions, userId }, 'Error al verificar permisos');
             res.status(500).json({ error: 'Error al verificar permisos' });
         }
     });

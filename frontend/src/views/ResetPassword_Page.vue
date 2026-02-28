@@ -105,10 +105,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from '@/utils/axios';
+import { resetPasswordRequest } from '@/domains/auth/api/authApi';
 import { useRoute } from 'vue-router';
-
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 const route = useRoute();
 
 const token = ref('');
@@ -152,10 +150,7 @@ const handleResetPassword = async () => {
   resetLoading.value = true;
 
   try {
-    await axios.post(`${API_URL}/auth/reset-password`, {
-      token: token.value,
-      newPassword: newPassword.value,
-    });
+    await resetPasswordRequest(token.value, newPassword.value);
 
     success.value = true;
   } catch (err) {

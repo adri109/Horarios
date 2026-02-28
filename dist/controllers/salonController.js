@@ -8,15 +8,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateSalonInfo = exports.getSalonSlots = exports.getSalonBySlug = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
 const getSalonBySlug = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { slug } = req.params;
     try {
-        const salon = yield prisma.salon.findUnique({
+        const salon = yield prisma_1.default.salon.findUnique({
             where: { slug },
             include: { services: true, config: true },
         });
@@ -54,7 +56,7 @@ const getSalonSlots = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     if (!date || typeof date !== 'string')
         return res.status(400).json({ error: 'Falta la fecha' });
     try {
-        const salon = yield prisma.salon.findUnique({
+        const salon = yield prisma_1.default.salon.findUnique({
             where: { slug },
             include: { config: true },
         });
@@ -76,7 +78,7 @@ const getSalonSlots = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             allSlots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
             currentMinutes += serviceIntervalMinutes;
         }
-        const appointments = yield prisma.appointment.findMany({
+        const appointments = yield prisma_1.default.appointment.findMany({
             where: {
                 startTime: {
                     gte: new Date(`${date}T00:00:00`),
@@ -99,14 +101,14 @@ const updateSalonInfo = (req, res) => __awaiter(void 0, void 0, void 0, function
         const userId = req.userId;
         const { name, address, city, phone, description } = req.body;
         // Buscar el salón del usuario admin
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: { adminId: userId }
         });
         if (!salon) {
             return res.status(404).json({ error: 'Salón no encontrado' });
         }
         // Actualizar información del salón
-        const updatedSalon = yield prisma.salon.update({
+        const updatedSalon = yield prisma_1.default.salon.update({
             where: { id: salon.id },
             data: {
                 name: name || salon.name,

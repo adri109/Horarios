@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { sendEmail, sendWhatsApp } from '../services/notificationService';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 interface CampaignRequest {
   channel: 'email' | 'whatsapp' | 'both';

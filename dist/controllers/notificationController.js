@@ -8,11 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createNotification = exports.markAllAsRead = exports.markAsRead = exports.getUnreadNotifications = exports.getNotifications = void 0;
-const client_1 = require("@prisma/client");
 const index_1 = require("../index");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
 // Obtener todas las notificaciones del usuario
 const getNotifications = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -20,7 +22,7 @@ const getNotifications = (req, res) => __awaiter(void 0, void 0, void 0, functio
         if (!userId) {
             return res.status(401).json({ error: 'No autenticado' });
         }
-        const notifications = yield prisma.notification.findMany({
+        const notifications = yield prisma_1.default.notification.findMany({
             where: { userId },
             orderBy: { sentAt: 'desc' },
             take: 20 // Últimas 20 notificaciones
@@ -40,7 +42,7 @@ const getUnreadNotifications = (req, res) => __awaiter(void 0, void 0, void 0, f
         if (!userId) {
             return res.status(401).json({ error: 'No autenticado' });
         }
-        const notifications = yield prisma.notification.findMany({
+        const notifications = yield prisma_1.default.notification.findMany({
             where: {
                 userId,
                 read: false
@@ -63,7 +65,7 @@ const markAsRead = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (!userId) {
             return res.status(401).json({ error: 'No autenticado' });
         }
-        const notification = yield prisma.notification.findFirst({
+        const notification = yield prisma_1.default.notification.findFirst({
             where: {
                 id: parseInt(id),
                 userId
@@ -72,7 +74,7 @@ const markAsRead = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (!notification) {
             return res.status(404).json({ error: 'Notificación no encontrada' });
         }
-        const updated = yield prisma.notification.update({
+        const updated = yield prisma_1.default.notification.update({
             where: { id: parseInt(id) },
             data: { read: true }
         });
@@ -91,7 +93,7 @@ const markAllAsRead = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         if (!userId) {
             return res.status(401).json({ error: 'No autenticado' });
         }
-        yield prisma.notification.updateMany({
+        yield prisma_1.default.notification.updateMany({
             where: {
                 userId,
                 read: false
@@ -109,7 +111,7 @@ exports.markAllAsRead = markAllAsRead;
 // Crear una notificación (uso interno)
 const createNotification = (userId, message, type) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const notification = yield prisma.notification.create({
+        const notification = yield prisma_1.default.notification.create({
             data: {
                 userId,
                 message,

@@ -8,11 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendCampaign = void 0;
-const client_1 = require("@prisma/client");
 const notificationService_1 = require("../services/notificationService");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
 const sendCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.userId;
     const { channel, subject, message, sendToAll, selectedClients } = req.body;
@@ -21,7 +23,7 @@ const sendCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     console.log('Enviar a todos:', sendToAll);
     try {
         // 1. Obtener el salón del usuario
-        const user = yield prisma.user.findUnique({
+        const user = yield prisma_1.default.user.findUnique({
             where: { id: userId },
             include: { salon: true, worksAt: true }
         });
@@ -35,7 +37,7 @@ const sendCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         // 2. Obtener clientes destinatarios
         let clients;
         if (sendToAll) {
-            clients = yield prisma.client.findMany({
+            clients = yield prisma_1.default.client.findMany({
                 where: { salonId: salon.id }
             });
         }
@@ -43,7 +45,7 @@ const sendCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             if (!selectedClients || selectedClients.length === 0) {
                 return res.status(400).json({ error: 'No se seleccionaron clientes' });
             }
-            clients = yield prisma.client.findMany({
+            clients = yield prisma_1.default.client.findMany({
                 where: {
                     id: { in: selectedClients },
                     salonId: salon.id

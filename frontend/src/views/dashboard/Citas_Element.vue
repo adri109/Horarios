@@ -365,12 +365,13 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import axios from '@/utils/axios';
+import {
+  fetchAppointmentsRequest,
+  updateAppointmentStatusRequest,
+} from '@/domains/appointments/api/appointmentsApi';
 import { useSocket } from '@/composables/useSocket';
 
 const { on, off } = useSocket();
-
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 
 const loading = ref(true);
 const citas = ref([]);
@@ -527,16 +528,7 @@ const filteredCitas = computed(() => {
 const fetchCitas = async () => {
   try {
     loading.value = true;
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-      console.error('❌ No autenticado');
-      return;
-    }
-    
-    const res = await axios.get(`${API_URL}/appointments`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await fetchAppointmentsRequest();
     
     citas.value = res.data;
     console.log('✅ Citas cargadas:', res.data.length);
@@ -550,13 +542,7 @@ const fetchCitas = async () => {
 // Actualizar estado de cita
 const updateStatus = async (citaId, newStatus) => {
   try {
-    const token = localStorage.getItem('token');
-    
-    await axios.put(
-      `${API_URL}/appointments/${citaId}/status`,
-      { status: newStatus },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    await updateAppointmentStatusRequest(citaId, newStatus);
     
     // Actualizar localmente
     const cita = citas.value.find(c => c.id === citaId);

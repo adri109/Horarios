@@ -1,27 +1,31 @@
 import { io } from 'socket.io-client';
 import { onBeforeUnmount } from 'vue';
+import { API_BASE_URL } from '@/config/api';
 
 let socketInstance = null;
 
 export function useSocket() {
-  const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token');
 
   // Crear o reutilizar instancia del socket
   if (!socketInstance) {
-    socketInstance = io(API_URL, {
-      transports: ['websocket', 'polling']
+    socketInstance = io(API_BASE_URL, {
+      transports: ['websocket', 'polling'],
+      auth: {
+        token,
+      },
     });
 
     socketInstance.on('connect', () => {
       console.log('🔌 WebSocket conectado');
-      if (user.id) {
-        socketInstance.emit('join', user.id);
-      }
     });
 
     socketInstance.on('disconnect', () => {
       console.log('🔌 WebSocket desconectado');
+    });
+
+    socketInstance.on('connect_error', (error) => {
+      console.error('❌ Error de autenticación WebSocket:', error.message);
     });
   }
 

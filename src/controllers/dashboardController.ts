@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Obtener estadísticas del dashboard
 export const getDashboardStats = async (req: Request, res: Response) => {

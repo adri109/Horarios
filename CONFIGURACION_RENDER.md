@@ -16,6 +16,7 @@ En Render, abre el servicio y completa estos valores:
 - `DIRECT_URL` (Supabase directa, puerto 5432, con `sslmode=require`)
 - `JWT_SECRET`
 - `FRONTEND_URL` (URL pública de tu frontend)
+- `CORS_ORIGINS` (lista separada por comas con orígenes permitidos)
 - Opcionales: `SMTP_USER`, `SMTP_PASS`, `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `STRIPE_SECRET_KEY`
 
 ## 3) Primer despliegue

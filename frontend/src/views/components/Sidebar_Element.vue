@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { BRAND } from '@/config/branding';
 
 // Obtener permisos del usuario desde localStorage
 const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -20,7 +21,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
     class="sidebar w-64 flex-shrink-0 hidden md:block h-full overflow-y-auto text-white"
   >
     <div class="p-6">
-      <h1 class="text-2xl font-bold mb-6">BeautySalon</h1>
+      <h1 class="text-2xl font-bold mb-6">{{ BRAND.appName }}</h1>
       <nav>
         <ul>
           <!-- dashboard -->
@@ -44,7 +45,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
                   d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                 ></path>
               </svg>
-              Dashboard
+              {{ BRAND.dashboardLabel }}
             </router-link>
           </li>
 

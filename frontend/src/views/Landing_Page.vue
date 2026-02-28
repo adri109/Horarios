@@ -10,7 +10,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
               </svg>
             </div>
-            <span class="text-white text-xl font-bold">BeautySalon</span>
+            <span class="text-white text-xl font-bold">{{ brand.appName }}</span>
           </router-link>
           <div class="flex items-center gap-4">
             <router-link 
@@ -45,7 +45,7 @@
             </span>
           </h1>
           <p class="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto">
-            Menos llamadas, menos citas perdidas, más control. Automatiza tu agenda y recupera el tiempo que necesitas para tu negocio.
+            Menos llamadas, menos citas perdidas, más control. Organiza tu agenda y recupera tiempo para tu negocio.
           </p>
           
           <div class="flex flex-col items-center gap-4">
@@ -74,16 +74,16 @@
           <!-- Benefits -->
           <div class="grid grid-cols-3 gap-8 max-w-3xl mx-auto mt-20">
             <div class="text-center">
-              <div class="text-4xl font-bold text-white mb-2">70%</div>
-              <div class="text-white/80">Ahorro de tiempo</div>
+              <div class="text-2xl font-bold text-white mb-2">Menos tiempo administrativo</div>
+              <div class="text-white/80">Agenda más ordenada</div>
             </div>
             <div class="text-center">
-              <div class="text-4xl font-bold text-white mb-2">-40%</div>
-              <div class="text-white/80">Citas perdidas</div>
+              <div class="text-2xl font-bold text-white mb-2">Menos citas perdidas</div>
+              <div class="text-white/80">Seguimiento centralizado</div>
             </div>
             <div class="text-center">
-              <div class="text-4xl font-bold text-white mb-2">100%</div>
-              <div class="text-white/80">Más organización</div>
+              <div class="text-2xl font-bold text-white mb-2">Más control diario</div>
+              <div class="text-white/80">Operación más clara</div>
             </div>
           </div>
         </div>
@@ -98,7 +98,7 @@
             ¿Qué hace esta app?
           </h2>
           <p class="text-xl text-gray-600 max-w-2xl mx-auto">
-            Una solución integral diseñada para simplificar la gestión diaria de tu salón de belleza
+            Una solución práctica diseñada para simplificar la gestión diaria de tu salón de belleza
           </p>
         </div>
 
@@ -174,12 +174,12 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
               </svg>
             </div>
-            <h3 class="text-xl font-bold text-gray-900 mb-3">Control de Inventario</h3>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Control de Inventario (Próximamente)</h3>
             <p class="text-gray-600 mb-3">
-              Gestión de stock de productos, alertas de bajo inventario y seguimiento de consumo.
+              Módulo en preparación para gestionar stock de productos en una próxima versión.
             </p>
             <p class="text-green-600 text-sm font-semibold">
-              → Nunca más te quedarás sin productos clave
+              → Ya visible en el panel como funcionalidad próxima
             </p>
           </div>
 
@@ -243,7 +243,7 @@
               <div>
                 <h3 class="text-xl font-bold text-gray-900 mb-2">Ahorra Tiempo</h3>
                 <p class="text-gray-600">
-                  Automatiza tareas repetitivas como confirmaciones de citas, recordatorios y gestión de agenda. Reduce el tiempo administrativo en un 70%.
+                  Centraliza tareas de agenda, seguimiento y confirmaciones para reducir carga administrativa diaria.
                 </p>
               </div>
             </div>
@@ -322,7 +322,7 @@
                 </svg>
                 <div>
                   <p class="text-gray-700 text-lg mb-4 italic">
-                    "Desde que empecé a usar BeautySalon, he reducido las citas perdidas en un 50% y recuperé más de 10 horas semanales. Ahora puedo centrarme en lo que realmente importa: mis clientes."
+                    "Desde que empecé a usar {{ brand.appName }}, reduje citas perdidas y recuperé tiempo cada semana. Ahora puedo centrarme en lo que realmente importa: mis clientes."
                   </p>
                   <div class="flex items-center gap-3">
                     <div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
@@ -383,7 +383,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
           <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            ¿Para quién es BeautySalon?
+            ¿Para quién es {{ brand.appName }}?
           </h2>
           <p class="text-xl text-gray-600 max-w-2xl mx-auto">
             Diseñado para profesionales que buscan crecer y optimizar su negocio
@@ -463,9 +463,9 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid md:grid-cols-4 gap-8">
           <div>
-            <h3 class="font-bold text-lg mb-4">BeautySalon</h3>
+            <h3 class="font-bold text-lg mb-4">{{ brand.appName }}</h3>
             <p class="text-gray-400 text-sm">
-              La solución completa para gestionar tu salón de belleza de forma profesional.
+              {{ brand.tagline }}
             </p>
           </div>
           <div>
@@ -494,7 +494,7 @@
           </div>
         </div>
         <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
-          <p>© 2026 Salon Manager. Todos los derechos reservados.</p>
+          <p>© {{ currentYear }} {{ brand.appName }}. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>
@@ -502,7 +502,15 @@
 </template>
 
 <script>
+import { BRAND } from '@/config/branding';
+
 export default {
   name: 'LandingPage',
+  data() {
+    return {
+      brand: BRAND,
+      currentYear: new Date().getFullYear(),
+    };
+  },
 };
 </script>

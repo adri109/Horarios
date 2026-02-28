@@ -419,8 +419,6 @@ import { ref, computed, onMounted } from 'vue';
 import axios from '@/utils/axios';
 import { usePermissions } from '../../composables/usePermissions';
 
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
-
 // Verificar permisos
 usePermissions('canViewPersonal');
 
@@ -479,10 +477,7 @@ const filteredWorkers = computed(() => {
 const loadWorkers = async () => {
   loading.value = true;
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/workers`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await axios.get('/workers');
     workers.value = response.data.workers || [];
   } catch (error) {
     console.error('Error al cargar trabajadores:', error);
@@ -501,10 +496,7 @@ const createWorker = async () => {
   formSuccess.value = '';
 
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.post(`${API_URL}/workers`, formData.value, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await axios.post('/workers', formData.value);
 
     workers.value.push(response.data.worker);
     formSuccess.value = 'Trabajador creado exitosamente';
@@ -556,7 +548,6 @@ const updateWorker = async () => {
   formSuccess.value = '';
 
   try {
-    const token = localStorage.getItem('token');
     const dataToSend = { ...formData.value };
     
     // No enviar password vacío
@@ -565,9 +556,8 @@ const updateWorker = async () => {
     }
 
     const response = await axios.put(
-      `${API_URL}/workers/${editingWorker.value.id}`,
-      dataToSend,
-      { headers: { Authorization: `Bearer ${token}` } }
+      `/workers/${editingWorker.value.id}`,
+      dataToSend
     );
 
     // Actualizar en la lista
@@ -599,10 +589,7 @@ const deleteWorker = async () => {
   formLoading.value = true;
 
   try {
-    const token = localStorage.getItem('token');
-    await axios.delete(`${API_URL}/workers/${workerToDelete.value.id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await axios.delete(`/workers/${workerToDelete.value.id}`);
 
     workers.value = workers.value.filter(w => w.id !== workerToDelete.value.id);
     showDeleteModal.value = false;

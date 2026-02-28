@@ -13,8 +13,6 @@ const sortBy = ref('recent'); // recent, name, spent
 const selectedClient = ref(null);
 const showClientDetail = ref(false);
 
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
-
 // Estadísticas generales
 const stats = computed(() => {
   if (clients.value.length === 0) return { total: 0, totalRevenue: 0, avgPerClient: 0 };
@@ -61,17 +59,13 @@ const filteredClients = computed(() => {
 const fetchClients = async () => {
   try {
     loading.value = true;
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
+    if (!localStorage.getItem('token')) {
       console.error('❌ No hay token de autenticación');
       return;
     }
     
     console.log('📤 Solicitando clientes...');
-    const response = await axios.get(`${API_URL}/clients`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await axios.get('/clients');
     
     console.log('✅ Clientes recibidos:', response.data);
     clients.value = response.data;

@@ -8,17 +8,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteClient = exports.updateClient = exports.getClientById = exports.getClients = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
 // Obtener todos los clientes de un salón con estadísticas
 const getClients = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
         const userId = req.user.userId;
         // Obtener el salón del usuario
-        const user = yield prisma.user.findUnique({
+        const user = yield prisma_1.default.user.findUnique({
             where: { id: userId },
             include: {
                 salon: true,
@@ -33,7 +35,7 @@ const getClients = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             return res.status(404).json({ error: 'No tienes un salón asociado' });
         }
         // Obtener clientes con estadísticas de citas
-        const clients = yield prisma.client.findMany({
+        const clients = yield prisma_1.default.client.findMany({
             where: { salonId },
             include: {
                 appointments: {
@@ -87,7 +89,7 @@ const getClientById = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const userId = req.user.userId;
         const clientId = parseInt(req.params.id);
         // Verificar que el cliente pertenece al salón del usuario
-        const user = yield prisma.user.findUnique({
+        const user = yield prisma_1.default.user.findUnique({
             where: { id: userId },
             include: {
                 salon: true,
@@ -101,7 +103,7 @@ const getClientById = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         if (!salonId) {
             return res.status(404).json({ error: 'No tienes un salón asociado' });
         }
-        const client = yield prisma.client.findFirst({
+        const client = yield prisma_1.default.client.findFirst({
             where: {
                 id: clientId,
                 salonId
@@ -141,7 +143,7 @@ const updateClient = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         const clientId = parseInt(req.params.id);
         const { name, phone, email } = req.body;
         // Verificar que el cliente pertenece al salón del usuario
-        const user = yield prisma.user.findUnique({
+        const user = yield prisma_1.default.user.findUnique({
             where: { id: userId },
             include: {
                 salon: true,
@@ -155,7 +157,7 @@ const updateClient = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         if (!salonId) {
             return res.status(404).json({ error: 'No tienes un salón asociado' });
         }
-        const client = yield prisma.client.findFirst({
+        const client = yield prisma_1.default.client.findFirst({
             where: {
                 id: clientId,
                 salonId
@@ -165,7 +167,7 @@ const updateClient = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             return res.status(404).json({ error: 'Cliente no encontrado' });
         }
         // Actualizar cliente
-        const updatedClient = yield prisma.client.update({
+        const updatedClient = yield prisma_1.default.client.update({
             where: { id: clientId },
             data: Object.assign(Object.assign(Object.assign({}, (name && { name })), (phone && { phone })), (email !== undefined && { email: email || null }))
         });
@@ -184,7 +186,7 @@ const deleteClient = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         const userId = req.user.userId;
         const clientId = parseInt(req.params.id);
         // Verificar que el cliente pertenece al salón del usuario
-        const user = yield prisma.user.findUnique({
+        const user = yield prisma_1.default.user.findUnique({
             where: { id: userId },
             include: {
                 salon: true,
@@ -198,7 +200,7 @@ const deleteClient = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         if (!salonId) {
             return res.status(404).json({ error: 'No tienes un salón asociado' });
         }
-        const client = yield prisma.client.findFirst({
+        const client = yield prisma_1.default.client.findFirst({
             where: {
                 id: clientId,
                 salonId
@@ -208,7 +210,7 @@ const deleteClient = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             return res.status(404).json({ error: 'Cliente no encontrado' });
         }
         // Eliminar cliente (esto también eliminará sus citas por cascada si está configurado)
-        yield prisma.client.delete({
+        yield prisma_1.default.client.delete({
             where: { id: clientId }
         });
         res.json({ message: 'Cliente eliminado correctamente' });

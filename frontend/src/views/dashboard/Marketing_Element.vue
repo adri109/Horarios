@@ -2,8 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import axios from '@/utils/axios';
 import { usePermissions } from '../../composables/usePermissions';
-
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
+import { alertDialog, confirmDialog } from '@/composables/useDialog';
 
 // Verificar permisos
 usePermissions('canViewMarketing');
@@ -71,10 +70,7 @@ const stats = computed(() => {
 const loadClients = async () => {
   loading.value = true;
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/clients`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await axios.get('/clients');
     clients.value = response.data;
   } catch (error) {
     console.error('Error cargando clientes:', error);
@@ -132,28 +128,27 @@ const selectAllClients = () => {
 // Enviar campaña
 const sendCampaign = async () => {
   if (!campaignData.value.message.trim()) {
-    alert('Por favor, escribe un mensaje');
+    await alertDialog('Por favor, escribe un mensaje');
     return;
   }
 
   if (selectedChannel.value === 'email' && !campaignData.value.subject.trim()) {
-    alert('Por favor, escribe un asunto para el email');
+    await alertDialog('Por favor, escribe un asunto para el email');
     return;
   }
 
   if (!campaignData.value.sendToAll && campaignData.value.selectedClients.length === 0) {
-    alert('Por favor, selecciona al menos un cliente');
+    await alertDialog('Por favor, selecciona al menos un cliente');
     return;
   }
 
   const confirmMsg = `¿Enviar campaña a ${stats.value.selectedClients} cliente(s)?`;
-  if (!confirm(confirmMsg)) return;
+  const confirmed = await confirmDialog(confirmMsg);
+  if (!confirmed) return;
 
   try {
-    const token = localStorage.getItem('token');
-    
     const response = await axios.post(
-      `${API_URL}/marketing/send-campaign`,
+      '/marketing/send-campaign',
       {
         channel: selectedChannel.value,
         type: campaignType.value,
@@ -161,9 +156,6 @@ const sendCampaign = async () => {
         message: campaignData.value.message,
         sendToAll: campaignData.value.sendToAll,
         selectedClients: campaignData.value.selectedClients
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` }
       }
     );
     

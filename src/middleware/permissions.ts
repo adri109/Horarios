@@ -1,21 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
+import { AuthRequest, UserPermissionKey } from '../types/auth';
+import logger from '../utils/logger';
 
 // Middleware para verificar permisos específicos
-export const checkPermission = (permission: string) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const userId = (req as any).userId;
-    const userRole = (req as any).userRole;
+export const checkPermission = (permission: UserPermissionKey) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const userId = req.userId;
+    const userRole = req.userRole;
 
-    console.log('🔒 Verificando permiso:', permission);
-    console.log('👤 UserId:', userId, 'Role:', userRole);
+    logger.debug({ permission, userId, userRole }, 'Verificando permiso');
 
     try {
       // ADMIN siempre tiene todos los permisos
       if (userRole === 'ADMIN') {
-        console.log('✅ ADMIN - Permiso concedido automáticamente');
+        logger.debug({ permission, userId }, 'Permiso concedido automáticamente por rol ADMIN');
         return next();
       }
 
@@ -47,7 +46,7 @@ export const checkPermission = (permission: string) => {
       }
 
       // Verificar el permiso específico
-      const hasPermission = (user as any)[permission];
+      const hasPermission = user[permission];
       
       if (!hasPermission) {
         return res.status(403).json({ 
@@ -58,7 +57,7 @@ export const checkPermission = (permission: string) => {
 
       next();
     } catch (error) {
-      console.error('Error al verificar permisos:', error);
+      logger.error({ error, permission, userId }, 'Error al verificar permisos');
       res.status(500).json({ error: 'Error al verificar permisos' });
     }
   };
@@ -66,9 +65,9 @@ export const checkPermission = (permission: string) => {
 
 // Helper para verificar múltiples permisos (OR)
 export const checkAnyPermission = (...permissions: string[]) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const userId = (req as any).userId;
-    const userRole = (req as any).userRole;
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const userId = req.userId;
+    const userRole = req.userRole;
 
     try {
       // ADMIN siempre tiene todos los permisos
@@ -104,7 +103,7 @@ export const checkAnyPermission = (...permissions: string[]) => {
 
       // Verificar si tiene al menos uno de los permisos
       const hasAnyPermission = permissions.some(
-        permission => (user as any)[permission] === true
+        permission => user[permission as UserPermissionKey] === true
       );
 
       if (!hasAnyPermission) {
@@ -116,7 +115,7 @@ export const checkAnyPermission = (...permissions: string[]) => {
 
       next();
     } catch (error) {
-      console.error('Error al verificar permisos:', error);
+      logger.error({ error, permissions, userId }, 'Error al verificar permisos');
       res.status(500).json({ error: 'Error al verificar permisos' });
     }
   };

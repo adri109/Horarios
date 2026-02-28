@@ -3,7 +3,6 @@ import { ref, onMounted, watch } from 'vue';
 import axios from '@/utils/axios';
 import { useRouter } from 'vue-router';
 
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 const router = useRouter();
 
 // Sistema de notificaciones toast
@@ -355,16 +354,12 @@ const applyQuickSchedule = async () => {
     const confirmed = await confirm('¿Aplicar estos horarios?', summary);
     if (!confirmed) return;
     
-    const token = localStorage.getItem('token');
-    
     // Eliminar horarios existentes de todos los días afectados
     const allDaysToApply = Array.from(dayShiftsMap.keys());
     for (const dayOfWeek of allDaysToApply) {
       const existingSchedules = getSchedulesForDay(dayOfWeek);
       for (const schedule of existingSchedules) {
-        await axios.delete(`${API_URL}/config/schedules/${schedule.id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await axios.delete(`/config/schedules/${schedule.id}`);
       }
       // Limpiar del array local también
       schedules.value = schedules.value.filter(s => s.dayOfWeek !== dayOfWeek);
@@ -393,13 +388,11 @@ const applyQuickSchedule = async () => {
       
       // Crear cada turno único
       for (const shift of uniqueShifts) {
-        const response = await axios.post(`${API_URL}/config/schedules`, {
+        const response = await axios.post('/config/schedules', {
           dayOfWeek,
           openingTime: shift.openingTime,
           closingTime: shift.closingTime,
           isClosed: false
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
         });
         schedules.value.push(response.data);
       }
@@ -430,11 +423,7 @@ const newBlock = ref({
 const fetchConfig = async () => {
   try {
     loading.value = true;
-    const token = localStorage.getItem('token');
-    
-    const response = await axios.get(`${API_URL}/config`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await axios.get('/config');
     
     console.log('Configuración recibida:', response.data);
     
@@ -469,16 +458,13 @@ const fetchConfig = async () => {
 const saveSalonInfo = async () => {
   try {
     saving.value = true;
-    
-    const token = localStorage.getItem('token');
-    const response = await axios.put(`${API_URL}/salon/info`, {
+
+    const response = await axios.put('/salon/info', {
       name: salonInfo.value.name,
       address: salonInfo.value.address,
       city: salonInfo.value.city,
       phone: salonInfo.value.phone,
       description: salonInfo.value.description
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
     });
     
     showToast('Información del salón guardada correctamente', 'success');
@@ -496,11 +482,7 @@ const saveSalonInfo = async () => {
 const saveConfig = async () => {
   try {
     saving.value = true;
-    const token = localStorage.getItem('token');
-    
-    await axios.put(`${API_URL}/config`, config.value, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await axios.put('/config', config.value);
     
     console.log('Configuración guardada');
   } catch (error) {
@@ -524,7 +506,6 @@ const isDayClosed = (dayOfWeek) => {
 // Agregar nuevo horario a un día
 const addScheduleSlot = async (dayOfWeek) => {
   try {
-    const token = localStorage.getItem('token');
     const existingSchedules = getSchedulesForDay(dayOfWeek);
     
     let newOpeningTime = config.value.openingTime;
@@ -554,18 +535,16 @@ const addScheduleSlot = async (dayOfWeek) => {
       
       // Validar que el nuevo horario no sea igual o menor que el de apertura
       if (newClosingTime <= newOpeningTime) {
-        alert('No se puede añadir más horarios. El último horario ya termina muy tarde.');
+        showToast('No se puede añadir más horarios. El último horario ya termina muy tarde.', 'warning');
         return;
       }
     }
     
-    const response = await axios.post(`${API_URL}/config/schedules`, {
+    const response = await axios.post('/config/schedules', {
       dayOfWeek,
       openingTime: newOpeningTime,
       closingTime: newClosingTime,
       isClosed: false
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
     });
     
     schedules.value.push(response.data);
@@ -573,7 +552,7 @@ const addScheduleSlot = async (dayOfWeek) => {
   } catch (error) {
     console.error('Error añadiendo horario:', error);
     if (error.response?.data?.error) {
-      alert(error.response.data.error);
+      showToast(error.response.data.error, 'error');
     }
   }
 };
@@ -581,14 +560,10 @@ const addScheduleSlot = async (dayOfWeek) => {
 // Actualizar horario existente
 const updateScheduleSlot = async (schedule) => {
   try {
-    const token = localStorage.getItem('token');
-    
-    await axios.put(`${API_URL}/config/schedules/${schedule.id}`, {
+    await axios.put(`/config/schedules/${schedule.id}`, {
       openingTime: schedule.openingTime,
       closingTime: schedule.closingTime,
       isClosed: schedule.isClosed
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
     });
     
     console.log('Horario actualizado');
@@ -599,14 +574,11 @@ const updateScheduleSlot = async (schedule) => {
 
 // Eliminar horario
 const deleteScheduleSlot = async (scheduleId) => {
-  if (!confirm('¿Estás seguro de eliminar este horario?')) return;
+  const confirmed = await confirm('¿Eliminar horario?', '¿Estás seguro de eliminar este horario?');
+  if (!confirmed) return;
   
   try {
-    const token = localStorage.getItem('token');
-    
-    await axios.delete(`${API_URL}/config/schedules/${scheduleId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await axios.delete(`/config/schedules/${scheduleId}`);
     
     schedules.value = schedules.value.filter(s => s.id !== scheduleId);
     console.log('Horario eliminado');
@@ -619,7 +591,6 @@ const deleteScheduleSlot = async (scheduleId) => {
 const toggleDayClosed = async (dayOfWeek) => {
   try {
     const daySchedules = getSchedulesForDay(dayOfWeek);
-    const token = localStorage.getItem('token');
     
     // Si ya hay horarios, actualizar el primero como cerrado
     if (daySchedules.length > 0) {
@@ -628,13 +599,11 @@ const toggleDayClosed = async (dayOfWeek) => {
       await updateScheduleSlot(schedule);
     } else {
       // Si no hay horarios, crear uno cerrado
-      const response = await axios.post(`${API_URL}/config/schedules`, {
+      const response = await axios.post('/config/schedules', {
         dayOfWeek,
         openingTime: config.value.openingTime,
         closingTime: config.value.closingTime,
         isClosed: true
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       schedules.value.push(response.data);
     }
@@ -664,11 +633,7 @@ const createBlock = async () => {
       return;
     }
     
-    const token = localStorage.getItem('token');
-    
-    const response = await axios.post(`${API_URL}/config/blocks`, newBlock.value, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await axios.post('/config/blocks', newBlock.value);
     
     blocks.value.push(response.data);
     showBlockModal.value = false;
@@ -684,11 +649,7 @@ const deleteBlock = async (blockId) => {
   if (!confirmed) return;
   
   try {
-    const token = localStorage.getItem('token');
-    
-    await axios.delete(`${API_URL}/config/blocks/${blockId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await axios.delete(`/config/blocks/${blockId}`);
     
     blocks.value = blocks.value.filter(b => b.id !== blockId);
     console.log('Bloqueo eliminado');

@@ -8,16 +8,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updatePublicPageCustomization = exports.deleteBlock = exports.createBlock = exports.deleteSchedule = exports.updateSchedule = exports.createSchedule = exports.updateConfig = exports.getConfig = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
 // Obtener toda la configuración del salón (config + horarios + bloqueos)
 const getConfig = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userId = req.user.userId;
         // Buscar el salón del usuario (ya sea admin o worker)
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: {
                 OR: [
                     { adminId: userId },
@@ -29,12 +31,12 @@ const getConfig = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return res.status(400).json({ error: 'No se encontró el salón del usuario' });
         }
         // Obtener config general
-        let config = yield prisma.config.findUnique({
+        let config = yield prisma_1.default.config.findUnique({
             where: { salonId: salon.id }
         });
         // Si no existe config, crearla con valores por defecto
         if (!config) {
-            config = yield prisma.config.create({
+            config = yield prisma_1.default.config.create({
                 data: {
                     salonId: salon.id,
                     requireConfirmation: false,
@@ -48,12 +50,12 @@ const getConfig = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             });
         }
         // Obtener horarios semanales
-        const schedules = yield prisma.salonSchedule.findMany({
+        const schedules = yield prisma_1.default.salonSchedule.findMany({
             where: { salonId: salon.id },
             orderBy: { dayOfWeek: 'asc' }
         });
         // Obtener bloqueos
-        const blocks = yield prisma.scheduleBlock.findMany({
+        const blocks = yield prisma_1.default.scheduleBlock.findMany({
             where: { salonId: salon.id },
             orderBy: { date: 'asc' }
         });
@@ -81,7 +83,7 @@ const updateConfig = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     try {
         const userId = req.user.userId;
         const { canAcceptAppointments, openingTime, closingTime, serviceIntervalMinutes } = req.body;
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: {
                 OR: [
                     { adminId: userId },
@@ -92,7 +94,7 @@ const updateConfig = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         if (!salon) {
             return res.status(400).json({ error: 'No se encontró el salón del usuario' });
         }
-        const config = yield prisma.config.upsert({
+        const config = yield prisma_1.default.config.upsert({
             where: { salonId: salon.id },
             update: {
                 canAcceptAppointments,
@@ -121,7 +123,7 @@ const createSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
     try {
         const userId = req.user.userId;
         const { dayOfWeek, openingTime, closingTime, isClosed } = req.body;
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: {
                 OR: [
                     { adminId: userId },
@@ -141,7 +143,7 @@ const createSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
         }
         // Validar que no se solape con horarios existentes del mismo día
         if (!isClosed) {
-            const existingSchedules = yield prisma.salonSchedule.findMany({
+            const existingSchedules = yield prisma_1.default.salonSchedule.findMany({
                 where: {
                     salonId: salon.id,
                     dayOfWeek,
@@ -159,7 +161,7 @@ const createSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 }
             }
         }
-        const schedule = yield prisma.salonSchedule.create({
+        const schedule = yield prisma_1.default.salonSchedule.create({
             data: {
                 salonId: salon.id,
                 dayOfWeek,
@@ -182,7 +184,7 @@ const updateSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
         const userId = req.user.userId;
         const { id } = req.params;
         const { openingTime, closingTime, isClosed } = req.body;
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: {
                 OR: [
                     { adminId: userId },
@@ -193,7 +195,7 @@ const updateSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
         if (!salon) {
             return res.status(400).json({ error: 'No se encontró el salón del usuario' });
         }
-        const schedule = yield prisma.salonSchedule.findUnique({
+        const schedule = yield prisma_1.default.salonSchedule.findUnique({
             where: { id: parseInt(id) }
         });
         if (!schedule || schedule.salonId !== salon.id) {
@@ -205,7 +207,7 @@ const updateSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
         }
         // Validar que no se solape con otros horarios del mismo día (excluyendo el actual)
         if (!isClosed) {
-            const existingSchedules = yield prisma.salonSchedule.findMany({
+            const existingSchedules = yield prisma_1.default.salonSchedule.findMany({
                 where: {
                     salonId: salon.id,
                     dayOfWeek: schedule.dayOfWeek,
@@ -223,7 +225,7 @@ const updateSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 }
             }
         }
-        const updated = yield prisma.salonSchedule.update({
+        const updated = yield prisma_1.default.salonSchedule.update({
             where: { id: parseInt(id) },
             data: {
                 openingTime,
@@ -244,7 +246,7 @@ const deleteSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
     try {
         const userId = req.user.userId;
         const { id } = req.params;
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: {
                 OR: [
                     { adminId: userId },
@@ -255,13 +257,13 @@ const deleteSchedule = (req, res) => __awaiter(void 0, void 0, void 0, function*
         if (!salon) {
             return res.status(400).json({ error: 'No se encontró el salón del usuario' });
         }
-        const schedule = yield prisma.salonSchedule.findUnique({
+        const schedule = yield prisma_1.default.salonSchedule.findUnique({
             where: { id: parseInt(id) }
         });
         if (!schedule || schedule.salonId !== salon.id) {
             return res.status(404).json({ error: 'Horario no encontrado' });
         }
-        yield prisma.salonSchedule.delete({
+        yield prisma_1.default.salonSchedule.delete({
             where: { id: parseInt(id) }
         });
         res.json({ message: 'Horario eliminado correctamente' });
@@ -277,7 +279,7 @@ const createBlock = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         const userId = req.user.userId;
         const { date, startTime, endTime, reason } = req.body;
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: {
                 OR: [
                     { adminId: userId },
@@ -288,7 +290,7 @@ const createBlock = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         if (!salon) {
             return res.status(400).json({ error: 'No se encontró el salón del usuario' });
         }
-        const block = yield prisma.scheduleBlock.create({
+        const block = yield prisma_1.default.scheduleBlock.create({
             data: {
                 salonId: salon.id,
                 date: new Date(date),
@@ -310,7 +312,7 @@ const deleteBlock = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         const userId = req.user.userId;
         const { id } = req.params;
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: {
                 OR: [
                     { adminId: userId },
@@ -321,13 +323,13 @@ const deleteBlock = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         if (!salon) {
             return res.status(400).json({ error: 'No se encontró el salón del usuario' });
         }
-        const block = yield prisma.scheduleBlock.findUnique({
+        const block = yield prisma_1.default.scheduleBlock.findUnique({
             where: { id: parseInt(id) }
         });
         if (!block || block.salonId !== salon.id) {
             return res.status(404).json({ error: 'Bloqueo no encontrado' });
         }
-        yield prisma.scheduleBlock.delete({
+        yield prisma_1.default.scheduleBlock.delete({
             where: { id: parseInt(id) }
         });
         res.json({ message: 'Bloqueo eliminado correctamente' });
@@ -344,18 +346,18 @@ const updatePublicPageCustomization = (req, res) => __awaiter(void 0, void 0, vo
         const userId = req.user.userId;
         const { publicPageBackground, publicPagePrimaryColor, publicPageSecondaryColor } = req.body;
         // Buscar el salón del usuario (debe ser admin)
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: { adminId: userId }
         });
         if (!salon) {
             return res.status(403).json({ error: 'Solo el administrador puede personalizar la página pública' });
         }
         // Obtener o crear config
-        let config = yield prisma.config.findUnique({
+        let config = yield prisma_1.default.config.findUnique({
             where: { salonId: salon.id }
         });
         if (!config) {
-            config = yield prisma.config.create({
+            config = yield prisma_1.default.config.create({
                 data: {
                     salonId: salon.id,
                     publicPageBackground,
@@ -365,7 +367,7 @@ const updatePublicPageCustomization = (req, res) => __awaiter(void 0, void 0, vo
             });
         }
         else {
-            config = yield prisma.config.update({
+            config = yield prisma_1.default.config.update({
                 where: { salonId: salon.id },
                 data: {
                     publicPageBackground,

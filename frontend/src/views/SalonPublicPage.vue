@@ -8,7 +8,7 @@
       <div class="max-w-6xl mx-auto px-4">
         <div class="flex justify-between items-center">
           <div>
-            <h1 class="text-4xl md:text-5xl font-bold mb-2">BeautySalon</h1>
+            <h1 class="text-4xl md:text-5xl font-bold mb-2">{{ BRAND.appName }}</h1>
             <p class="text-purple-100">Reserva tu cita online</p>
           </div>
           <!-- Botón de acceso al dashboard si está autenticado -->
@@ -20,7 +20,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
             </svg>
-            Ir al Dashboard
+            Ir al {{ BRAND.dashboardLabel }}
           </router-link>
         </div>
       </div>
@@ -668,6 +668,8 @@ import { ref, onMounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from '@/utils/axios';
 import CustomCalendar from '@/components/CustomCalendar.vue';
+import { BRAND } from '@/config/branding';
+import { alertDialog } from '@/composables/useDialog';
 
 const route = useRoute();
 const slug = route.params.slug;
@@ -807,7 +809,7 @@ async function confirmAppointment() {
 
   // Validar solo si no está autenticado
   if (!isAuthenticated.value && (!clientName.value || (!clientPhone.value && !clientEmail.value))) {
-    alert('Por favor, completa tu nombre y al menos un método de contacto');
+    await alertDialog('Por favor, completa tu nombre y al menos un método de contacto');
     return;
   }
 
@@ -818,11 +820,6 @@ async function confirmAppointment() {
     const startDateTime = new Date(selectedDate.value);
     startDateTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
 
-    const token = localStorage.getItem('token');
-    const config = token ? {
-      headers: { Authorization: `Bearer ${token}` }
-    } : {};
-
     const response = await axios.post(`/public/${slug}/appointments`, {
       clientName: clientName.value,
       clientPhone: clientPhone.value || null,
@@ -830,7 +827,7 @@ async function confirmAppointment() {
       serviceId: selectedService.value.id,
       startTime: startDateTime.toISOString(),
       isStaffBooking: isAuthenticated.value, // Flag para indicar que es un trabajador
-    }, config);
+    });
 
     console.log('Cita creada:', response.data);
     appointmentSuccess.value = true;
@@ -1089,10 +1086,10 @@ async function saveCustomization() {
     
     showCustomizationModal.value = false;
     
-    alert('✅ Personalización guardada correctamente');
+    await alertDialog('✅ Personalización guardada correctamente', 'Personalización');
   } catch (error) {
     console.error('Error guardando personalización:', error);
-    alert('❌ Error al guardar la personalización');
+    await alertDialog('❌ Error al guardar la personalización', 'Personalización');
   } finally {
     savingCustomization.value = false;
   }

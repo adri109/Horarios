@@ -13,9 +13,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteWorker = exports.updateWorker = exports.createWorker = exports.getAllWorkers = void 0;
-const client_1 = require("@prisma/client");
 const bcrypt_1 = __importDefault(require("bcrypt"));
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
 // ==========================
 // GET ALL WORKERS
 // ==========================
@@ -23,7 +22,7 @@ const getAllWorkers = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     const userId = req.userId;
     try {
         // 1️⃣ Buscar el salón del usuario (solo ADMIN puede ver workers)
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: { adminId: userId },
             include: {
                 workers: {
@@ -73,21 +72,21 @@ const createWorker = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     const { email, password, name, phone, permissions } = req.body;
     try {
         // 1️⃣ Verificar que el usuario es ADMIN de un salón
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: { adminId: userId },
         });
         if (!salon) {
             return res.status(403).json({ error: 'Solo los administradores pueden crear personal' });
         }
         // 2️⃣ Verificar que el email no existe
-        const existingUser = yield prisma.user.findUnique({ where: { email } });
+        const existingUser = yield prisma_1.default.user.findUnique({ where: { email } });
         if (existingUser) {
             return res.status(400).json({ error: 'El email ya está registrado' });
         }
         // 3️⃣ Hashear contraseña
         const hashedPassword = yield bcrypt_1.default.hash(password, 10);
         // 4️⃣ Crear usuario WORKER vinculado al salón con permisos
-        const worker = yield prisma.user.create({
+        const worker = yield prisma_1.default.user.create({
             data: {
                 email,
                 password: hashedPassword,
@@ -155,14 +154,14 @@ const updateWorker = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     const { email, name, phone, password, permissions } = req.body;
     try {
         // 1️⃣ Verificar que el usuario es ADMIN
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: { adminId: userId },
         });
         if (!salon) {
             return res.status(403).json({ error: 'Solo los administradores pueden editar personal' });
         }
         // 2️⃣ Verificar que el worker pertenece a este salón
-        const worker = yield prisma.user.findFirst({
+        const worker = yield prisma_1.default.user.findFirst({
             where: {
                 id: workerId,
                 salonId: salon.id,
@@ -174,7 +173,7 @@ const updateWorker = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         }
         // 3️⃣ Si cambia el email, verificar que no existe
         if (email && email !== worker.email) {
-            const existingEmail = yield prisma.user.findUnique({ where: { email } });
+            const existingEmail = yield prisma_1.default.user.findUnique({ where: { email } });
             if (existingEmail) {
                 return res.status(400).json({ error: 'El email ya está en uso' });
             }
@@ -226,7 +225,7 @@ const updateWorker = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                 updateData.canCancelAppointments = permissions.canCancelAppointments;
         }
         // 5️⃣ Actualizar worker
-        const updatedWorker = yield prisma.user.update({
+        const updatedWorker = yield prisma_1.default.user.update({
             where: { id: workerId },
             data: updateData,
             select: {
@@ -270,14 +269,14 @@ const deleteWorker = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     const workerId = parseInt(req.params.id);
     try {
         // 1️⃣ Verificar que el usuario es ADMIN
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: { adminId: userId },
         });
         if (!salon) {
             return res.status(403).json({ error: 'Solo los administradores pueden eliminar personal' });
         }
         // 2️⃣ Verificar que el worker pertenece a este salón
-        const worker = yield prisma.user.findFirst({
+        const worker = yield prisma_1.default.user.findFirst({
             where: {
                 id: workerId,
                 salonId: salon.id,
@@ -288,7 +287,7 @@ const deleteWorker = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             return res.status(404).json({ error: 'Trabajador no encontrado' });
         }
         // 3️⃣ Eliminar worker
-        yield prisma.user.delete({
+        yield prisma_1.default.user.delete({
             where: { id: workerId },
         });
         res.json({ message: 'Trabajador eliminado exitosamente' });

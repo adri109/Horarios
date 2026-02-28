@@ -1,0 +1,259 @@
+ANÁLISIS PROFUNDO DEL PROYECTO HORARIOS
+Fecha: 2026-02-25
+Alcance: Backend + Frontend + Deploy + Seguridad + UX/UI + Operación
+
+====================================================
+1) RESUMEN EJECUTIVO
+====================================================
+Estado general: FUNCIONAL pero NO LISTO para publicación oficial “estable y escalable”.
+
+Nivel actual (estimado):
+- Funcionalidad base: 8/10
+- Seguridad: 4/10
+- Calidad de código/mantenibilidad: 5/10
+- Experiencia visual/consistencia: 6/10
+- Operación/producción (SRE básico): 5/10
+- Preparación comercial (go-live): 5/10
+
+Conclusión:
+La app ya permite trabajar (login, dashboard, citas, clientes, servicios, permisos, pública, sockets),
+pero hay varios riesgos serios para un lanzamiento oficial: seguridad de sockets, validación de inputs,
+controles de tenant en endpoints concretos, hardcodes de localhost, y deuda fuerte de frontend monolítico.
+
+====================================================
+2) LO QUE ESTÁ BIEN (FORTALEZAS REALES)
+====================================================
+- Arquitectura funcional de producto SaaS inicial (backend + frontend + DB + despliegue cloud).
+- Modelo de datos bastante completo para salón (usuarios, roles, servicios, citas, clientes, horarios, bloqueos, notificaciones).
+- Multi-tenant básico implementado en muchas consultas mediante salonId/admin/workers.
+- Sistema de permisos granular para workers (base correcta para escalado de equipo).
+- Integración en producción completada con Supabase + Render + Vercel.
+- WebSockets integrados y funcionales para actualizaciones de citas/notificaciones.
+- Página pública por slug ya operativa y con personalización inicial.
+
+====================================================
+3) BLOQUEADORES CRÍTICOS (P0) ANTES DE PUBLICACIÓN OFICIAL
+====================================================
+3.1 Seguridad de WebSocket (CRÍTICO)
+Problema:
+- Cualquier cliente puede emitir “join” con cualquier userId y suscribirse a room ajeno.
+Impacto:
+- Riesgo de fuga de datos/notificaciones entre usuarios.
+Qué cambiar:
+- Autenticar socket con JWT en handshake.
+- Resolver userId desde token en servidor, no desde evento enviado por cliente.
+- Rechazar conexiones no autenticadas.
+
+3.2 Fallback inseguro de JWT_SECRET
+Problema:
+- Se usa process.env.JWT_SECRET || 'your_jwt_secret'.
+Impacto:
+- Si falta variable, tokens firmados con secreto trivial.
+Qué cambiar:
+- Fallar arranque si JWT_SECRET no existe.
+- Eliminar TODO fallback hardcodeado.
+
+3.3 Endpoints con riesgo de acceso cruzado tenant (multi-tenant bypass)
+Problema:
+- createService usa salonId enviado por frontend (no derivado del usuario).
+- getServiceById no valida pertenencia al salón del usuario.
+- createAppointment no valida correctamente ownership de client/service/stylist respecto al salón del usuario autenticado.
+Impacto:
+- Posible lectura/escritura en datos de otro salón.
+Qué cambiar:
+- Derivar SIEMPRE salonId del usuario autenticado.
+- Validar ownership en todos los CRUD por entidad.
+
+3.4 CORS demasiado permisivo en producción
+Problema:
+- Se permite cualquier subdominio vercel.app.
+Impacto:
+- Superficie de ataque innecesaria.
+Qué cambiar:
+- Lista cerrada de orígenes permitidos por variable de entorno (incluyendo preview si hace falta, pero explícita).
+
+3.5 Ruta de test expuesta en notificaciones
+Problema:
+- Existe POST /notifications/test en rutas productivas.
+Impacto:
+- Ruido operativo y potencial abuso.
+Qué cambiar:
+- Eliminar o proteger estrictamente por NODE_ENV !== production + rol admin interno.
+
+====================================================
+4) DEUDA TÉCNICA ALTA (P1)
+====================================================
+4.1 PrismaClient instanciado en múltiples archivos
+Problema:
+- new PrismaClient() repetido en muchos controllers/middlewares.
+Impacto:
+- Riesgo de exceso de conexiones y menor control lifecycle.
+Qué cambiar:
+- Crear singleton de Prisma en src/utils/prisma.ts y reutilizar en todo el backend.
+
+4.2 Validación de entrada insuficiente
+Problema:
+- Falta capa homogénea de validación de payloads (register, createAppointment, services, workers, config, etc.).
+Impacto:
+- Errores de calidad de datos y vectores de abuso.
+Qué cambiar:
+- Añadir Zod/Joi + middleware de validación por endpoint.
+
+4.3 Inconsistencia de request context
+Problema:
+- Mezcla de req.user.userId y req.userId según controlador.
+Impacto:
+- Fragilidad y bugs silenciosos.
+Qué cambiar:
+- Tipar AuthRequest unificado y usar una sola convención.
+
+4.4 Hardcodes de localhost en backend/frontend
+Problema:
+- Links en forgot password y marketing usan localhost.
+Impacto:
+- Flujo roto en producción (emails con links incorrectos).
+Qué cambiar:
+- Variable pública FRONTEND_URL para construir enlaces absolutos.
+
+4.5 Logging de debug excesivo
+Problema:
+- Mucho console.log en producción (incluye trazas sensibles de flujo).
+Impacto:
+- Ruido, coste y posible exposición de datos.
+Qué cambiar:
+- Logger estructurado con niveles (pino/winston) y masking de datos sensibles.
+
+4.6 Falta middleware de seguridad base
+Falta:
+- helmet
+- rate limiting
+- request size limit
+- posiblemente compresión
+Impacto:
+- Menor resiliencia ante abuso y ataques básicos.
+
+====================================================
+5) GAP FUNCIONAL (LO QUE FALTA PARA “APP COMPLETA”)
+====================================================
+5.1 Inventario no implementado realmente
+- Existe modelo y permisos, pero frontend muestra “Próximamente” y no hay backend CRUD de inventario operativo.
+- Marketing/landing lo vende como feature activa => gap entre promesa y realidad.
+
+5.2 Flujos de estado de cita inconsistentes
+- Comentarios mencionan NO_SHOW, pero enum y flujo no están plenamente alineados.
+- Duplicidad de actualización de estado en dashboardController y appointmentController con reglas distintas.
+
+5.3 Ausencia de pruebas automáticas reales
+- Jest está instalado, pero no hay tests ni unitarios ni integración.
+- Para publicación oficial esto es un riesgo alto en regresiones.
+
+====================================================
+6) UX/UI Y CALIDAD VISUAL (ANÁLISIS HONESTO)
+====================================================
+6.1 Inconsistencia fuerte de diseño
+Observado:
+- Mezcla de estilos Tailwind + CSS custom extenso + gradientes muy distintos por vista.
+- Branding inconsistente: “BeautySalon”, “SalonPro”, “Salon Manager”, etc.
+- Iconografía mixta (SVG inline, Lucide CDN, clases FontAwesome sin dependencia explícita local).
+Impacto:
+- Sensación de producto no unificado, menor percepción premium.
+
+6.2 Componentes demasiado grandes
+- Hay vistas de 700-1300 líneas (Citas, Resume, Clientes, etc.).
+Impacto:
+- Muy difícil mantener, testear, iterar diseño, corregir bugs rápido.
+
+6.3 UX técnica mejorable
+- Se siguen usando alert/confirm en varias pantallas.
+- Muchas vistas duplican lógica de API_URL/token y errores.
+- Dependencia total de localStorage + parse directo (riesgo de crash si datos corruptos).
+
+6.4 Accesibilidad mejorable
+- user-select:none global en casi toda la UI limita usabilidad.
+- Falta revisión a11y formal (foco, contraste, navegación teclado, ARIA).
+
+====================================================
+7) DEVOPS / OPERACIÓN / GO-LIVE
+====================================================
+7.1 Lo positivo
+- Deploy split correcto: backend Render, frontend Vercel, DB Supabase.
+- Prisma migrate deploy integrado en arranque de Render.
+
+7.2 Lo pendiente para operación estable
+- CI/CD básico (build + lint + tests + deploy gates).
+- Observabilidad real (errores centralizados, alertas, uptime monitor).
+- Procedimiento de backup/restore documentado y probado.
+- Política de rotación de secretos y checklist post-incidencia.
+
+====================================================
+8) PLAN DE GIRO COMPLETO (RECOMENDADO)
+====================================================
+FASE 0 (48-72h) — Cerrar riesgos críticos
+1) Autenticar sockets con JWT en handshake.
+2) Eliminar fallback JWT_SECRET y forzar variable obligatoria.
+3) Corregir ownership multi-tenant en create/get/update críticos (services/appointments).
+4) Cerrar CORS a lista explícita.
+5) Eliminar /notifications/test en producción.
+
+FASE 1 (1 semana) — Estabilización técnica
+1) Prisma singleton.
+2) Validación de payloads con Zod/Joi.
+3) Unificar AuthRequest y manejo de errores global.
+4) Reemplazar console.log por logger estructurado.
+5) Añadir helmet + rate-limit + límites de request.
+
+FASE 2 (1-2 semanas) — Calidad de producto
+1) Refactor frontend en componentes pequeños (por dominio).
+2) Crear design system mínimo (tokens, botones, inputs, modales, toasts).
+3) Unificar branding y lenguaje visual.
+4) Sustituir todos los alert/confirm por componentes UI consistentes.
+5) Centralizar acceso API (sin repetir API_URL y headers manuales).
+
+FASE 3 (2 semanas) — Confiabilidad de negocio
+1) Implementar tests mínimos:
+   - Auth/login/register/forgot-reset
+   - Appointments status/permissions/ownership
+   - Services CRUD tenant-safe
+2) Añadir inventario real o ocultarlo del producto comercial hasta implementarlo.
+3) Ajustar claims de landing/marketing a funcionalidades realmente disponibles.
+
+====================================================
+9) CHECKLIST REALISTA PARA “PUBLICACIÓN OFICIAL”
+====================================================
+Debe cumplirse TODO:
+[ ] Seguridad sockets corregida
+[ ] JWT sin fallback y secretos rotados
+[ ] Endpoints críticos con validación y ownership estricto
+[ ] CORS cerrado a dominios reales
+[ ] Sin rutas de test en producción
+[ ] Logger + monitoring activo
+[ ] 20-30 tests críticos verdes
+[ ] UX consistente sin alert/confirm nativos
+[ ] Branding unificado
+[ ] Feature matrix real (sin vender funciones “próximamente” como actuales)
+
+====================================================
+10) PRIORIZACIÓN FINAL (QUÉ HARÍA PRIMERO SI FUESE MI APP)
+====================================================
+Top 5 inmediato:
+1) Socket auth + rooms seguras
+2) Multi-tenant hardening en services/appointments
+3) JWT_SECRET obligatorio + rotación secretos
+4) CORS estricto + quitar endpoint test
+5) Refactor frontend de autenticación/API layer + eliminar alert/confirm
+
+Top 5 siguiente sprint:
+1) Validación Zod/Joi
+2) Prisma singleton
+3) Logger estructurado + alertas
+4) Tests de integración críticos
+5) Unificación visual y design tokens
+
+====================================================
+11) VEREDICTO
+====================================================
+Tu proyecto ya superó la barrera de “demo”: hoy es una app que se puede usar.
+Para pasar a “publicación oficial profesional”, el foco no debe ser añadir más features,
+sino cerrar seguridad, consistencia de datos multi-tenant, mantenibilidad y calidad visual unificada.
+
+Con 2-4 semanas de ejecución disciplinada sobre este plan, puedes dejarlo en un nivel muy sólido para clientes reales.

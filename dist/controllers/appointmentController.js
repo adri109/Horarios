@@ -8,11 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateAppointmentStatus = exports.createAppointment = exports.getAppointmentById = exports.getAllAppointments = void 0;
-const client_1 = require("@prisma/client");
 const index_1 = require("../index");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
 const getAllAppointments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userId = req.userId;
@@ -20,7 +22,7 @@ const getAllAppointments = (req, res) => __awaiter(void 0, void 0, void 0, funct
             return res.status(401).json({ error: 'No autenticado' });
         }
         // Buscar el salón del usuario
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: {
                 OR: [
                     { adminId: userId },
@@ -32,7 +34,7 @@ const getAllAppointments = (req, res) => __awaiter(void 0, void 0, void 0, funct
             return res.status(404).json({ error: 'No tienes un salón asociado' });
         }
         // Obtener solo las citas del salón del usuario
-        const appointments = yield prisma.appointment.findMany({
+        const appointments = yield prisma_1.default.appointment.findMany({
             where: {
                 service: {
                     salonId: salon.id
@@ -61,7 +63,7 @@ const getAppointmentById = (req, res) => __awaiter(void 0, void 0, void 0, funct
             return res.status(401).json({ error: 'No autenticado' });
         }
         // Buscar el salón del usuario
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: {
                 OR: [
                     { adminId: userId },
@@ -72,7 +74,7 @@ const getAppointmentById = (req, res) => __awaiter(void 0, void 0, void 0, funct
         if (!salon) {
             return res.status(404).json({ error: 'No tienes un salón asociado' });
         }
-        const appointment = yield prisma.appointment.findFirst({
+        const appointment = yield prisma_1.default.appointment.findFirst({
             where: {
                 id: Number(id),
                 service: {
@@ -98,12 +100,58 @@ const getAppointmentById = (req, res) => __awaiter(void 0, void 0, void 0, funct
 exports.getAppointmentById = getAppointmentById;
 const createAppointment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { clientId, stylistId, serviceId, startTime, endTime } = req.body;
+    const userId = req.userId;
     try {
-        const appointment = yield prisma.appointment.create({
+        if (!userId) {
+            return res.status(401).json({ error: 'No autenticado' });
+        }
+        const userSalon = yield prisma_1.default.salon.findFirst({
+            where: {
+                OR: [
+                    { adminId: userId },
+                    { workers: { some: { id: userId } } }
+                ]
+            }
+        });
+        if (!userSalon) {
+            return res.status(404).json({ error: 'No tienes un salón asociado' });
+        }
+        const service = yield prisma_1.default.service.findFirst({
+            where: {
+                id: Number(serviceId),
+                salonId: userSalon.id,
+            },
+        });
+        if (!service) {
+            return res.status(404).json({ error: 'Servicio no encontrado o no pertenece a tu salón' });
+        }
+        const client = yield prisma_1.default.client.findFirst({
+            where: {
+                id: Number(clientId),
+                salonId: userSalon.id,
+            },
+        });
+        if (!client) {
+            return res.status(404).json({ error: 'Cliente no encontrado o no pertenece a tu salón' });
+        }
+        const stylist = yield prisma_1.default.user.findFirst({
+            where: {
+                id: Number(stylistId),
+                OR: [
+                    { id: userSalon.adminId },
+                    { salonId: userSalon.id },
+                ],
+            },
+            select: { id: true },
+        });
+        if (!stylist) {
+            return res.status(404).json({ error: 'Profesional no encontrado o no pertenece a tu salón' });
+        }
+        const appointment = yield prisma_1.default.appointment.create({
             data: {
-                clientId,
-                stylistId,
-                serviceId,
+                clientId: client.id,
+                stylistId: stylist.id,
+                serviceId: service.id,
                 startTime: new Date(startTime),
                 endTime: new Date(endTime),
             },
@@ -121,8 +169,8 @@ const createAppointment = (req, res) => __awaiter(void 0, void 0, void 0, functi
             }
         });
         // Emitir evento WebSocket a todos los usuarios del salón
-        const salon = appointment.service.salon;
-        const userIds = [salon.adminId, ...salon.workers.map(w => w.id)];
+        const appointmentSalon = appointment.service.salon;
+        const userIds = [appointmentSalon.adminId, ...appointmentSalon.workers.map(w => w.id)];
         userIds.forEach(userId => {
             index_1.io.to(`user_${userId}`).emit('appointment-created', { appointmentId: appointment.id });
         });
@@ -137,13 +185,12 @@ const updateAppointmentStatus = (req, res) => __awaiter(void 0, void 0, void 0, 
     const { id } = req.params;
     const { status } = req.body;
     const userId = req.userId;
-    const userRole = req.userRole;
     try {
         if (!userId) {
             return res.status(401).json({ error: 'No autenticado' });
         }
         // Buscar el salón y permisos del usuario
-        const user = yield prisma.user.findUnique({
+        const user = yield prisma_1.default.user.findUnique({
             where: { id: userId },
             select: {
                 role: true,
@@ -170,7 +217,7 @@ const updateAppointmentStatus = (req, res) => __awaiter(void 0, void 0, void 0, 
         // COMPLETED y NO_SHOW siempre están permitidos para workers
         // (es su función principal marcar asistencia)
         // Buscar el salón del usuario
-        const salon = yield prisma.salon.findFirst({
+        const salon = yield prisma_1.default.salon.findFirst({
             where: {
                 OR: [
                     { adminId: userId },
@@ -182,7 +229,7 @@ const updateAppointmentStatus = (req, res) => __awaiter(void 0, void 0, void 0, 
             return res.status(404).json({ error: 'No tienes un salón asociado' });
         }
         // Verificar que la cita pertenece al salón del usuario
-        const existingAppointment = yield prisma.appointment.findFirst({
+        const existingAppointment = yield prisma_1.default.appointment.findFirst({
             where: {
                 id: Number(id),
                 service: {
@@ -193,7 +240,7 @@ const updateAppointmentStatus = (req, res) => __awaiter(void 0, void 0, void 0, 
         if (!existingAppointment) {
             return res.status(404).json({ error: 'Cita no encontrada o no tienes permiso para modificarla' });
         }
-        const appointment = yield prisma.appointment.update({
+        const appointment = yield prisma_1.default.appointment.update({
             where: { id: Number(id) },
             data: { status },
             include: {

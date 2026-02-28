@@ -1,9 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from '@/utils/axios';
+import { alertDialog } from '@/composables/useDialog';
 import { usePermissions } from '../../composables/usePermissions';
-
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 
 // Verificar permisos
 usePermissions('canViewReports');
@@ -23,13 +22,10 @@ const endDate = ref('');
 const loadData = async () => {
   loading.value = true;
   try {
-    const token = localStorage.getItem('token');
-    const headers = { Authorization: `Bearer ${token}` };
-
     const [appointmentsRes, clientsRes, servicesRes] = await Promise.all([
-      axios.get(`${API_URL}/appointments`, { headers }),
-      axios.get(`${API_URL}/clients`, { headers }),
-      axios.get(`${API_URL}/services`, { headers })
+      axios.get('/appointments'),
+      axios.get('/clients'),
+      axios.get('/services')
     ]);
 
     appointments.value = appointmentsRes.data;
@@ -145,7 +141,7 @@ const topClients = computed(() => {
 // Función para descargar CSV
 const downloadCSV = (data, filename) => {
   if (data.length === 0) {
-    alert('No hay datos para exportar');
+    alertDialog('No hay datos para exportar');
     return;
   }
 

@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { io } from '../index';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Obtener todas las notificaciones del usuario
 export const getNotifications = async (req: Request, res: Response) => {

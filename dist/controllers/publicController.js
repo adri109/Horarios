@@ -8,18 +8,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createPublicAppointment = exports.getSalonSlots = exports.getSalonPublic = void 0;
-const client_1 = require("@prisma/client");
 const notificationService_1 = require("../services/notificationService");
 const notificationController_1 = require("../controllers/notificationController");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = __importDefault(require("../utils/prisma"));
 // Obtener los datos públicos del salón y servicios
 const getSalonPublic = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
     const { slug } = req.params;
     try {
-        const salon = yield prisma.salon.findUnique({
+        const salon = yield prisma_1.default.salon.findUnique({
             where: { slug },
             include: {
                 services: true,
@@ -73,7 +75,7 @@ const getSalonSlots = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     const serviceDuration = duration ? parseInt(duration, 10) : 30;
     try {
-        const salon = yield prisma.salon.findUnique({
+        const salon = yield prisma_1.default.salon.findUnique({
             where: { slug },
             include: {
                 config: true,
@@ -117,7 +119,7 @@ const getSalonSlots = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         });
         console.log(`⏰ Intervalos de tiempo configurados:`, timeIntervals);
         // Consultar citas existentes para esa fecha con información del servicio
-        const appointments = yield prisma.appointment.findMany({
+        const appointments = yield prisma_1.default.appointment.findMany({
             where: {
                 startTime: {
                     gte: new Date(`${date}T00:00:00Z`),
@@ -235,14 +237,14 @@ const createPublicAppointment = (req, res) => __awaiter(void 0, void 0, void 0, 
     }
     try {
         // 1. Obtener el salón
-        const salon = yield prisma.salon.findUnique({
+        const salon = yield prisma_1.default.salon.findUnique({
             where: { slug },
             include: { admin: true },
         });
         if (!salon)
             return res.status(404).json({ error: 'Salón no encontrado' });
         // 2. Verificar que el servicio existe y pertenece al salón
-        const service = yield prisma.service.findFirst({
+        const service = yield prisma_1.default.service.findFirst({
             where: {
                 id: parseInt(serviceId, 10),
                 salonId: salon.id,
@@ -257,7 +259,7 @@ const createPublicAppointment = (req, res) => __awaiter(void 0, void 0, void 0, 
         console.log(`📅 Creando cita: ${clientName} - ${service.name}`);
         console.log(`🕐 Horario: ${start.toISOString()} - ${end.toISOString()}`);
         // 4. Verificar que no hay conflictos (opcional pero recomendado)
-        const conflictingAppointments = yield prisma.appointment.findMany({
+        const conflictingAppointments = yield prisma_1.default.appointment.findMany({
             where: {
                 service: { salonId: salon.id },
                 status: { not: 'CANCELLED' },
@@ -289,7 +291,7 @@ const createPublicAppointment = (req, res) => __awaiter(void 0, void 0, void 0, 
             });
         }
         // 5. Crear o buscar el cliente
-        let client = yield prisma.client.findFirst({
+        let client = yield prisma_1.default.client.findFirst({
             where: {
                 salonId: salon.id,
                 OR: [
@@ -299,7 +301,7 @@ const createPublicAppointment = (req, res) => __awaiter(void 0, void 0, void 0, 
             },
         });
         if (!client) {
-            client = yield prisma.client.create({
+            client = yield prisma_1.default.client.create({
                 data: {
                     name: clientName,
                     phone: clientPhone || null,
@@ -313,7 +315,7 @@ const createPublicAppointment = (req, res) => __awaiter(void 0, void 0, void 0, 
             console.log(`✅ Cliente existente: ${client.name} (ID: ${client.id})`);
         }
         // 6. Crear la cita (stylistId será el admin del salón por defecto)
-        const appointment = yield prisma.appointment.create({
+        const appointment = yield prisma_1.default.appointment.create({
             data: {
                 clientId: client.id,
                 stylistId: salon.adminId,

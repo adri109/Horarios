@@ -1,12 +1,10 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import slugify from 'slugify';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Configurar transporte de email
 const transporter = nodemailer.createTransport({
@@ -21,6 +19,11 @@ const transporter = nodemailer.createTransport({
 // REGISTER
 // ==========================
 export const register = async (req: Request, res: Response) => {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    return res.status(500).json({ error: 'Configuración de autenticación inválida' });
+  }
+
   const {
     email,
     password,
@@ -85,7 +88,7 @@ export const register = async (req: Request, res: Response) => {
     // 6️⃣ Crear token JWT
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET || 'your_jwt_secret',
+      jwtSecret,
       { expiresIn: '1h' }
     );
 
@@ -119,6 +122,11 @@ export const register = async (req: Request, res: Response) => {
 // LOGIN
 // ==========================
 export const login = async (req: Request, res: Response) => {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    return res.status(500).json({ error: 'Configuración de autenticación inválida' });
+  }
+
   const { email, password } = req.body;
 
   try {
@@ -141,7 +149,7 @@ export const login = async (req: Request, res: Response) => {
     // 3️⃣ Generar token JWT
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET || 'your_jwt_secret',
+      jwtSecret,
       { expiresIn: '1h' }
     );
 

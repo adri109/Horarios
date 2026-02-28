@@ -1,6 +1,6 @@
 # 💈 Sistema de Gestión para Salones de Belleza
 
-Aplicación web completa para la gestión integral de salones de belleza, peluquerías y centros estéticos. Sistema multi-tenant con panel administrativo y página pública de reservas.
+Aplicación web para la gestión diaria de salones de belleza, peluquerías y centros estéticos. Sistema multi-tenant con panel administrativo y página pública de reservas.
 
 ## 📋 Características Principales
 
@@ -8,9 +8,9 @@ Aplicación web completa para la gestión integral de salones de belleza, peluqu
 - 👥 **Control de Clientes**: Historial completo, estadísticas y búsqueda avanzada
 - 👨‍💼 **Gestión de Personal**: Roles, permisos personalizados y asignación de tareas
 - 💇 **Servicios**: Administración de servicios con precios y duraciones
-- 📦 **Inventario**: Control de stock con alertas de bajo inventario
+- 📦 **Inventario (Próximamente)**: Módulo reservado para una próxima versión
 - 📊 **Informes y Estadísticas**: Panel con métricas clave y exportación CSV
-- 📧 **Notificaciones**: Sistema integrado con Email (Gmail) y WhatsApp
+- 📧 **Notificaciones**: Sistema integrado con Email (Gmail) y soporte de WhatsApp según integración disponible
 - 🎯 **Marketing**: Campañas promocionales por email y WhatsApp
 - 🌐 **Reserva Pública**: Página de reservas personalizada con URL única
 - 🔐 **Sistema de Autenticación**: JWT con roles y permisos granulares
@@ -223,7 +223,7 @@ El slug se genera automáticamente del nombre de tu salón.
 
 ### WORKER (Trabajador)
 - Permisos personalizables por el ADMIN
-- Puede incluir: ver/editar/eliminar clientes, servicios, inventario
+- Puede incluir: ver/editar/eliminar clientes y servicios
 - Acceso a citas asignadas
 - Sin acceso a configuración ni gestión de personal
 

@@ -1,12 +1,11 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Response } from 'express';
 import { io } from '../index';
+import prisma from '../utils/prisma';
+import { AuthRequest } from '../types/auth';
 
-const prisma = new PrismaClient();
-
-export const getAllAppointments = async (req: Request, res: Response) => {
+export const getAllAppointments = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     
     if (!userId) {
       return res.status(401).json({ error: 'No autenticado' });
@@ -48,9 +47,9 @@ export const getAllAppointments = async (req: Request, res: Response) => {
   }
 };
 
-export const getAppointmentById = async (req: Request, res: Response) => {
+export const getAppointmentById = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const userId = (req as any).userId;
+  const userId = req.userId;
   
   try {
     if (!userId) {
@@ -96,15 +95,70 @@ export const getAppointmentById = async (req: Request, res: Response) => {
   }
 };
 
-export const createAppointment = async (req: Request, res: Response) => {
+export const createAppointment = async (req: AuthRequest, res: Response) => {
   const { clientId, stylistId, serviceId, startTime, endTime } = req.body;
+  const userId = req.userId;
 
   try {
+    if (!userId) {
+      return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const userSalon = await prisma.salon.findFirst({
+      where: {
+        OR: [
+          { adminId: userId },
+          { workers: { some: { id: userId } } }
+        ]
+      }
+    });
+
+    if (!userSalon) {
+      return res.status(404).json({ error: 'No tienes un salón asociado' });
+    }
+
+    const service = await prisma.service.findFirst({
+      where: {
+        id: Number(serviceId),
+        salonId: userSalon.id,
+      },
+    });
+
+    if (!service) {
+      return res.status(404).json({ error: 'Servicio no encontrado o no pertenece a tu salón' });
+    }
+
+    const client = await prisma.client.findFirst({
+      where: {
+        id: Number(clientId),
+        salonId: userSalon.id,
+      },
+    });
+
+    if (!client) {
+      return res.status(404).json({ error: 'Cliente no encontrado o no pertenece a tu salón' });
+    }
+
+    const stylist = await prisma.user.findFirst({
+      where: {
+        id: Number(stylistId),
+        OR: [
+          { id: userSalon.adminId },
+          { salonId: userSalon.id },
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (!stylist) {
+      return res.status(404).json({ error: 'Profesional no encontrado o no pertenece a tu salón' });
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
-        clientId,
-        stylistId,
-        serviceId,
+        clientId: client.id,
+        stylistId: stylist.id,
+        serviceId: service.id,
         startTime: new Date(startTime),
         endTime: new Date(endTime),
       },
@@ -123,8 +177,8 @@ export const createAppointment = async (req: Request, res: Response) => {
     });
 
     // Emitir evento WebSocket a todos los usuarios del salón
-    const salon = appointment.service.salon;
-    const userIds = [salon.adminId, ...salon.workers.map(w => w.id)];
+    const appointmentSalon = appointment.service.salon;
+    const userIds = [appointmentSalon.adminId, ...appointmentSalon.workers.map(w => w.id)];
     
     userIds.forEach(userId => {
       io.to(`user_${userId}`).emit('appointment-created', { appointmentId: appointment.id });
@@ -136,11 +190,10 @@ export const createAppointment = async (req: Request, res: Response) => {
   }
 };
 
-export const updateAppointmentStatus = async (req: Request, res: Response) => {
+export const updateAppointmentStatus = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
-  const userId = (req as any).userId;
-  const userRole = (req as any).userRole;
+  const userId = req.userId;
 
   try {
     if (!userId) {

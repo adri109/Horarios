@@ -298,10 +298,8 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from '@/utils/axios';
+import { forgotPasswordRequest, loginRequest } from '@/domains/auth/api/authApi';
 import { useRouter } from 'vue-router';
-
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 
 const router = useRouter();
 const email = ref('');
@@ -322,7 +320,7 @@ const handleLogin = async () => {
   try {
     console.log('📤 Intentando login con:', { email: email.value });
 
-    const res = await axios.post('/auth/login', {
+    const res = await loginRequest({
       email: email.value,
       password: password.value,
     });
@@ -363,9 +361,7 @@ const handleForgotPassword = async () => {
   resetError.value = '';
   
   try {
-    await axios.post(`${API_URL}/auth/forgot-password`, {
-      email: resetEmail.value
-    });
+    await forgotPasswordRequest(resetEmail.value);
     
     resetSuccess.value = true;
     setTimeout(() => {

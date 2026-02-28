@@ -5,7 +5,6 @@ import { useSocket } from '@/composables/useSocket';
 
 const { on, off } = useSocket();
 
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 const stats = ref(null);
 const loading = ref(true);
 
@@ -13,17 +12,13 @@ const loading = ref(true);
 const fetchStats = async () => {
   try {
     loading.value = true;
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
+    if (!localStorage.getItem('token')) {
       console.error('❌ No autenticado');
       window.location.href = '/login';
       return;
     }
     
-    const response = await axios.get(`${API_URL}/dashboard/stats`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await axios.get('/dashboard/stats');
     
     stats.value = response.data;
   } catch (error) {
@@ -41,12 +36,9 @@ const fetchStats = async () => {
 // Marcar cita como completada o no show
 const updateAppointmentStatus = async (appointmentId, status) => {
   try {
-    const token = localStorage.getItem('token');
-    
     await axios.put(
-      `${API_URL}/dashboard/appointments/${appointmentId}/status`,
-      { status },
-      { headers: { Authorization: `Bearer ${token}` } }
+      `/dashboard/appointments/${appointmentId}/status`,
+      { status }
     );
     
     // Recargar estadísticas
@@ -113,7 +105,7 @@ onBeforeUnmount(() => {
       <!-- Header -->
       <div class="dashboard-header">
         <div>
-          <h1 class="title">Dashboard</h1>
+          <h1 class="title">Panel</h1>
           <p class="subtitle">Vista general de tu salón</p>
         </div>
         <div class="current-time">

@@ -1,10 +1,8 @@
 // controllers/publicController.ts
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { sendAppointmentNotifications } from '../services/notificationService';
 import { createNotification } from '../controllers/notificationController';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Obtener los datos públicos del salón y servicios
 export const getSalonPublic = async (req: Request, res: Response) => {

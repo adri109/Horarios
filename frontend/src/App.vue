@@ -1,6 +1,11 @@
 <template>
   <router-view />
+  <DialogHost />
 </template>
+
+<script setup>
+import DialogHost from '@/components/ui/DialogHost.vue';
+</script>
 
 <style lang="scss">
 body {
