@@ -41,7 +41,11 @@
         v-else-if="!salon"
         class="bg-white rounded-2xl shadow-xl p-8 text-center"
       >
-        <div class="text-6xl mb-4">😕</div>
+        <div class="flex justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 text-purple-400">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3.614A9 9 0 0 1 21 12c0 4.97-4.03 9-9 9a8.97 8.97 0 0 1-6.431-2.706M15 9l-6 6m0-6 6 6M6.228 6.228A8.96 8.96 0 0 0 3 12c0 2.208.796 4.23 2.117 5.796M3 3l18 18" />
+          </svg>
+        </div>
         <h2 class="text-2xl font-bold text-gray-800 mb-2">Salón no encontrado</h2>
         <p class="text-gray-600">El salón que buscas no existe o no está disponible</p>
       </div>
@@ -96,6 +100,11 @@
           </h2>
           
           <div v-if="!salon.schedules || salon.schedules.length === 0" class="text-center py-4">
+            <div class="flex justify-center mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-purple-400">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0A9 9 0 1 1 12 3a9 9 0 0 1 9 9ZM3 3l18 18" />
+              </svg>
+            </div>
             <p class="text-gray-400 text-sm">Horarios no configurados</p>
           </div>
           
@@ -149,7 +158,6 @@
           </h2>
           
           <div v-if="services.length === 0" class="text-center py-10">
-            <div class="text-6xl mb-4">💈</div>
             <p class="text-gray-500 text-lg">Este salón aún no tiene servicios disponibles</p>
           </div>
           

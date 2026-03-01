@@ -467,9 +467,10 @@ onMounted(() => {
 
 <style scoped>
 .marketing-container {
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  min-height: 100vh;
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 8rem);
 }
 
 .header {

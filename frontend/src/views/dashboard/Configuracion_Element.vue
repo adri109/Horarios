@@ -1325,6 +1325,7 @@ onMounted(() => {
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  min-height: calc(100vh - 8rem);
 }
 
 .header {

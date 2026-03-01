@@ -3,7 +3,12 @@
     <!-- Header -->
     <div class="header">
       <div>
-        <h1 class="title">Gestión de Citas</h1>
+        <h1 class="title flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-8 h-8 title-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5A2.25 2.25 0 0 1 5.25 5.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25M3 18.75A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75M3 18.75v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+          </svg>
+          Gestión de Citas
+        </h1>
         <p class="subtitle">Administra las reservas de tu salón</p>
       </div>
     </div>
@@ -646,6 +651,7 @@ onBeforeUnmount(() => {
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  min-height: calc(100vh - 8rem);
 }
 
 .header {
@@ -660,6 +666,10 @@ onBeforeUnmount(() => {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
+}
+
+.title-icon {
+  color: #667eea;
 }
 
 .subtitle {

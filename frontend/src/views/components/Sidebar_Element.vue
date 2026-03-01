@@ -2,6 +2,15 @@
 import { computed } from 'vue';
 import { BRAND } from '@/config/branding';
 
+const props = defineProps({
+  collapsed: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const emit = defineEmits(['toggle']);
+
 // Obtener permisos del usuario desde localStorage
 const user = JSON.parse(localStorage.getItem('user') || '{}');
 const permissions = user.permissions || {};
@@ -18,17 +27,37 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
 
 <template>
   <div
-    class="sidebar w-64 flex-shrink-0 hidden md:block h-full overflow-y-auto text-white"
+    :class="[
+      'sidebar flex-shrink-0 hidden md:block h-full overflow-y-auto text-white',
+      { 'is-collapsed': props.collapsed }
+    ]"
   >
-    <div class="p-6">
-      <h1 class="text-2xl font-bold mb-6">{{ BRAND.appName }}</h1>
+    <div class="p-4 md:p-5">
+      <div class="sidebar-top">
+        <div class="brand-wrap">
+          <h1 v-if="!props.collapsed" class="text-2xl font-bold">{{ BRAND.appName }}</h1>
+        </div>
+        <button
+          class="toggle-btn"
+          @click="emit('toggle')"
+          :title="props.collapsed ? 'Expandir menú' : 'Recoger menú'"
+          type="button"
+        >
+          <svg v-if="!props.collapsed" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5 15.75 12l-7.5 7.5" />
+          </svg>
+        </button>
+      </div>
       <nav>
         <ul>
           <!-- dashboard -->
           <li class="mb-4">
             <router-link
               to="/dashboard/resume"
-              class="flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+              class="sidebar-nav-link flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
               exact-active-class="bg-white bg-opacity-20"
             >
               <svg
@@ -45,7 +74,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
                   d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                 ></path>
               </svg>
-              {{ BRAND.dashboardLabel }}
+              <span v-if="!props.collapsed">{{ BRAND.dashboardLabel }}</span>
             </router-link>
           </li>
 
@@ -53,7 +82,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
           <li class="mb-4">
             <router-link
               to="/dashboard/citas"
-              class="flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+              class="sidebar-nav-link flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
               exact-active-class="bg-white bg-opacity-20"
             >
               <svg
@@ -70,7 +99,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
                   d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                 ></path>
               </svg>
-              Citas
+              <span v-if="!props.collapsed">Citas</span>
             </router-link>
           </li>
 
@@ -78,7 +107,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
           <li v-if="canViewClients" class="mb-4">
             <router-link
               to="/dashboard/clientes"
-              class="flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+              class="sidebar-nav-link flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
               active-class="bg-white bg-opacity-20"
             >
               <svg
@@ -95,7 +124,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
                   d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                 ></path>
               </svg>
-              Clientes
+              <span v-if="!props.collapsed">Clientes</span>
             </router-link>
           </li>
 
@@ -103,7 +132,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
           <li v-if="canViewPersonal" class="mb-4">
             <router-link
               to="/dashboard/personal"
-              class="flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+              class="sidebar-nav-link flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
               active-class="bg-white bg-opacity-20"
             >
               <svg
@@ -117,10 +146,10 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   stroke-width="2"
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  d="M12 10.5a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Zm-7.5 9.75a7.5 7.5 0 0 1 12-6m-.75.75h4.5a.75.75 0 0 1 .75.75v4.5h-6v-4.5a.75.75 0 0 1 .75-.75Zm1.125 0V13.5a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v1.5"
                 ></path>
               </svg>
-              Personal
+              <span v-if="!props.collapsed">Personal</span>
             </router-link>
           </li>
 
@@ -128,7 +157,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
           <li v-if="canViewServices" class="mb-4">
             <router-link
               to="/dashboard/servicios"
-              class="flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+              class="sidebar-nav-link flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
               active-class="bg-white bg-opacity-20"
             >
               <svg
@@ -145,7 +174,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
                   d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
                 ></path>
               </svg>
-              Servicios
+              <span v-if="!props.collapsed">Servicios</span>
             </router-link>
           </li>
 
@@ -153,7 +182,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
           <li v-if="canViewInventory" class="mb-4">
             <router-link
               to="/dashboard/inventario"
-              class="flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+              class="sidebar-nav-link flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
               active-class="bg-white bg-opacity-20"
             >
               <svg
@@ -170,7 +199,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
                   d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
                 ></path>
               </svg>
-              Inventario
+              <span v-if="!props.collapsed">Inventario</span>
             </router-link>
           </li>
 
@@ -178,7 +207,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
           <li v-if="canViewReports" class="mb-4">
             <router-link
               to="/dashboard/informes"
-              class="flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+              class="sidebar-nav-link flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
               active-class="bg-white bg-opacity-20"
             >
               <svg
@@ -195,7 +224,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
                   d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                 ></path>
               </svg>
-              Informes
+              <span v-if="!props.collapsed">Informes</span>
             </router-link>
           </li>
 
@@ -203,7 +232,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
           <li v-if="canViewMarketing" class="mb-4">
             <router-link
               to="/dashboard/marketing"
-              class="flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+              class="sidebar-nav-link flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
               active-class="bg-white bg-opacity-20"
             >
               <svg
@@ -220,7 +249,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
                   d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
                 ></path>
               </svg>
-              Marketing
+              <span v-if="!props.collapsed">Marketing</span>
             </router-link>
           </li>
 
@@ -228,7 +257,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
           <li v-if="isAdmin" class="mb-4">
             <router-link
               to="/dashboard/configuracion"
-              class="flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
+              class="sidebar-nav-link flex items-center p-2 rounded-lg hover:bg-white hover:bg-opacity-20"
               active-class="bg-white bg-opacity-20"
             >
               <svg
@@ -251,7 +280,7 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
                   d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                 ></path>
               </svg>
-              Configuración
+              <span v-if="!props.collapsed">Configuración</span>
             </router-link>
           </li>
         </ul>
@@ -259,3 +288,65 @@ const canViewMarketing = computed(() => isAdmin || permissions.canViewMarketing)
     </div>
   </div>
 </template>
+
+<style scoped>
+.sidebar {
+  width: 16rem;
+  transition: width 0.2s ease;
+}
+
+.sidebar.is-collapsed {
+  width: 5.25rem;
+}
+
+.sidebar.is-collapsed .sidebar-top {
+  justify-content: center;
+}
+
+.sidebar.is-collapsed .brand-wrap {
+  display: none;
+}
+
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+}
+
+.toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar.is-collapsed .toggle-btn {
+  margin: 0 auto;
+}
+
+.sidebar-nav-link {
+  min-height: 2.5rem;
+  transition: all 0.2s ease;
+}
+
+.sidebar.is-collapsed .sidebar-nav-link {
+  justify-content: center;
+}
+
+.sidebar.is-collapsed .sidebar-nav-link svg {
+  margin-right: 0;
+}
+</style>

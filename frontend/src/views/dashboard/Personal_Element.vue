@@ -1,14 +1,19 @@
 <template>
-  <div class="p-6 space-y-6">
+  <div class="personal-container space-y-6">
     <!-- Header -->
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-gray-800">Personal</h1>
+        <h1 class="section-title flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-8 h-8 title-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Zm-7.5 9.75a7.5 7.5 0 0 1 12-6m-.75.75h4.5a.75.75 0 0 1 .75.75v4.5h-6v-4.5a.75.75 0 0 1 .75-.75Zm1.125 0V13.5a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v1.5" />
+          </svg>
+          Personal
+        </h1>
         <p class="text-gray-600 mt-1">Gestiona tu equipo de trabajo</p>
       </div>
       <button
         @click="showCreateModal = true"
-        class="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
+        class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
       >
         <span class="text-xl">+</span>
         Agregar Trabajador
@@ -31,10 +36,10 @@
         </div>
       </div>
 
-      <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 shadow-lg">
+      <div class="bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl p-6 shadow-lg">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-blue-100 text-sm">Activos</p>
+            <p class="text-purple-100 text-sm">Activos</p>
             <p class="text-3xl font-bold mt-1">{{ workers.length }}</p>
           </div>
           <div class="text-5xl opacity-30">
@@ -45,10 +50,10 @@
         </div>
       </div>
 
-      <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-6 shadow-lg">
+      <div class="bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-xl p-6 shadow-lg">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-green-100 text-sm">Roles</p>
+            <p class="text-pink-100 text-sm">Roles</p>
             <p class="text-3xl font-bold mt-1">Trabajadores</p>
           </div>
           <div class="text-5xl opacity-30">
@@ -85,12 +90,12 @@
       >
         <div class="flex items-start justify-between mb-4">
           <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
               {{ worker.name ? worker.name.charAt(0).toUpperCase() : '?' }}
             </div>
             <div>
               <h3 class="font-semibold text-gray-800">{{ worker.name || 'Sin nombre' }}</h3>
-              <span class="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full">
+              <span class="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
                 {{ worker.role }}
               </span>
             </div>
@@ -369,7 +374,7 @@
 
           <button
             type="submit"
-            class="w-full py-2 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:shadow-lg transition disabled:opacity-50"
+            class="w-full py-2 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md hover:shadow-lg transition disabled:opacity-50"
             :disabled="formLoading"
           >
             {{ formLoading ? 'Guardando...' : (showEditModal ? 'Actualizar' : 'Crear Trabajador') }}
@@ -651,6 +656,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.personal-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 8rem);
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -659,5 +671,19 @@ onMounted(() => {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.title-icon {
+  color: #667eea;
 }
 </style>

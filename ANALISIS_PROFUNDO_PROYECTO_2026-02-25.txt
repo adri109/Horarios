@@ -257,3 +257,56 @@ Para pasar a “publicación oficial profesional”, el foco no debe ser añadir
 sino cerrar seguridad, consistencia de datos multi-tenant, mantenibilidad y calidad visual unificada.
 
 Con 2-4 semanas de ejecución disciplinada sobre este plan, puedes dejarlo en un nivel muy sólido para clientes reales.
+
+====================================================
+12) ACTUALIZACIÓN DE ESTADO (2026-03-01)
+====================================================
+
+Resumen actualizado:
+- El proyecto ya no está en estado “no listo” como al inicio del análisis.
+- Fases 0, 1, 2 y 3 de la hoja de publicación están ejecutadas en repositorio.
+- Backend y frontend desplegados, health check público en 200.
+- Incidencia CORS detectada en producción (dominio preview de Vercel) corregida en código backend.
+
+Nivel actual (estimado):
+- Funcionalidad base: 8.5/10
+- Seguridad: 7.5/10
+- Calidad de código/mantenibilidad: 7.5/10
+- Experiencia visual/consistencia: 7.5/10
+- Operación/producción (SRE básico): 7/10
+- Preparación comercial (go-live): 8/10
+
+Qué cambió respecto al análisis inicial:
+- Riesgos críticos P0 cerrados (socket auth, JWT obligatorio, ownership multi-tenant, CORS endurecido, ruta test protegida).
+- Estabilización técnica P1 cerrada (Prisma singleton, validación con Zod, logger estructurado, hardening HTTP).
+- Calidad de producto con mejoras reales (refactor por dominios, design system base, branding unificado, dialogs UI, API layer centralizada).
+- Tests críticos mínimos implementados y en verde (auth/services/appointments).
+- Claims comerciales ajustados para no sobreprometer funcionalidades no implementadas.
+
+Incidencia reciente y resolución:
+- Problema: bloqueo CORS desde dominio preview de Vercel.
+- Causa raíz: origin no contemplado explícitamente en allowlist efectiva de producción.
+- Solución aplicada:
+   1) normalización de orígenes con/sin slash final,
+   2) dominio estable permitido por defecto,
+   3) patrón confiable para previews `*-adri109s-projects.vercel.app`.
+
+Cuánto falta para “publicación oficial funcional”:
+- Estado actual: 85-90%.
+- Pendiente corto (cierre operativo):
+   1) confirmar en deploy que la versión activa incluye el último fix CORS,
+   2) cerrar smoke funcional post-deploy y marcar checklist final,
+   3) redeploy de frontend si todavía sirve copy anterior.
+
+Cuánto falta para una app “completa y potente”:
+- Estado actual: 70-75%.
+- Pendiente de producto/escala (siguiente sprint):
+   1) inventario operativo real (backend CRUD + UI completa),
+   2) ampliar batería de tests (objetivo 20-30 críticos),
+   3) optimización de bundle/frontend performance,
+   4) observabilidad operativa (monitoring/alertas/runbooks).
+
+Veredicto actualizado:
+La app ya está en tramo final de publicación controlada y puede considerarse casi lista para salir,
+siempre que se cierren los checks operativos post-deploy. Para pasar de “funcional y publicable” a
+“potente y escalable”, el mayor salto está en inventario real, cobertura de pruebas y operación continua.

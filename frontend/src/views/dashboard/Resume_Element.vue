@@ -105,7 +105,12 @@ onBeforeUnmount(() => {
       <!-- Header -->
       <div class="dashboard-header">
         <div>
-          <h1 class="title">Panel</h1>
+          <h1 class="title flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-8 h-8 title-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25A2.25 2.25 0 0 1 8.25 10.5H6A2.25 2.25 0 0 1 3.75 8.25V6Zm0 9.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6Zm0 9.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+            </svg>
+            Panel
+          </h1>
           <p class="subtitle">Vista general de tu salón</p>
         </div>
         <div class="current-time">
@@ -360,8 +365,9 @@ onBeforeUnmount(() => {
 <style scoped>
 .dashboard-container {
   padding: 2rem;
-  max-width: 1600px;
+  max-width: 1400px;
   margin: 0 auto;
+  min-height: calc(100vh - 8rem);
 }
 
 .loading {
@@ -400,6 +406,12 @@ onBeforeUnmount(() => {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
+}
+
+.title-icon {
+  color: #667eea;
+  background: none;
+  -webkit-text-fill-color: currentColor;
 }
 
 .subtitle {
