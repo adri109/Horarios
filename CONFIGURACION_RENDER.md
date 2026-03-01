@@ -17,6 +17,11 @@ En Render, abre el servicio y completa estos valores:
 - `JWT_SECRET`
 - `FRONTEND_URL` (URL pública de tu frontend)
 - `CORS_ORIGINS` (lista separada por comas con orígenes permitidos)
+
+Formato recomendado para orígenes (`FRONTEND_URL`/`CORS_ORIGINS`):
+- Sin slash final (`/`)
+- Ejemplo correcto: `https://horarios-six.vercel.app`
+- Ejemplo a evitar: `https://horarios-six.vercel.app/`
 - Opcionales: `SMTP_USER`, `SMTP_PASS`, `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `STRIPE_SECRET_KEY`
 
 ## 3) Primer despliegue

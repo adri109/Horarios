@@ -66,13 +66,16 @@ if (!jwtSecret) {
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
 const isProduction = process.env.NODE_ENV === 'production';
+const defaultProductionOrigins = ['https://horarios-six.vercel.app'];
+const normalizeOrigin = (value) => value.trim().replace(/\/+$/, '');
 const parseOrigins = (value) => (value || '')
     .split(',')
-    .map(origin => origin.trim())
+    .map(origin => normalizeOrigin(origin))
     .filter(Boolean);
 const allowedOrigins = Array.from(new Set([
     ...parseOrigins(process.env.CORS_ORIGINS),
-    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+    ...(process.env.FRONTEND_URL ? [normalizeOrigin(process.env.FRONTEND_URL)] : []),
+    ...(isProduction ? defaultProductionOrigins.map(normalizeOrigin) : []),
     ...(!isProduction
         ? [
             'http://localhost:8080',
@@ -119,7 +122,8 @@ app.use(globalLimiter);
 const io = new socket_io_1.Server(httpServer, {
     cors: {
         origin: (origin, callback) => {
-            if (!origin || allowedOrigins.includes(origin)) {
+            const normalizedOrigin = origin ? normalizeOrigin(origin) : undefined;
+            if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
                 callback(null, true);
             }
             else {
@@ -165,8 +169,9 @@ io.on('connection', (socket) => {
 });
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    if (origin && allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
+    const normalizedOrigin = origin ? normalizeOrigin(origin) : undefined;
+    if (normalizedOrigin && allowedOrigins.includes(normalizedOrigin)) {
+        res.header('Access-Control-Allow-Origin', normalizedOrigin);
     }
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');

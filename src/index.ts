@@ -33,17 +33,21 @@ const app = express();
 const httpServer = createServer(app);
 
 const isProduction = process.env.NODE_ENV === 'production';
+const defaultProductionOrigins = ['https://horarios-six.vercel.app'];
+
+const normalizeOrigin = (value: string) => value.trim().replace(/\/+$/, '');
 
 const parseOrigins = (value?: string) =>
   (value || '')
     .split(',')
-    .map(origin => origin.trim())
+    .map(origin => normalizeOrigin(origin))
     .filter(Boolean);
 
 const allowedOrigins = Array.from(
   new Set([
     ...parseOrigins(process.env.CORS_ORIGINS),
-    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+    ...(process.env.FRONTEND_URL ? [normalizeOrigin(process.env.FRONTEND_URL)] : []),
+    ...(isProduction ? defaultProductionOrigins.map(normalizeOrigin) : []),
     ...(!isProduction
       ? [
           'http://localhost:8080',
@@ -104,7 +108,9 @@ app.use(globalLimiter);
 const io = new Server(httpServer, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      const normalizedOrigin = origin ? normalizeOrigin(origin) : undefined;
+
+      if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -161,9 +167,10 @@ io.on('connection', (socket) => {
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+  const normalizedOrigin = origin ? normalizeOrigin(origin) : undefined;
 
-  if (origin && allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
+  if (normalizedOrigin && allowedOrigins.includes(normalizedOrigin)) {
+    res.header('Access-Control-Allow-Origin', normalizedOrigin);
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');

@@ -36,6 +36,17 @@ Actualización: 2026-02-28 (estado deploy)
   - Verificación actual en producción: landing muestra copy antiguo (claims y branding previos).
   - Riesgo: desalineación con los ajustes de publicación ya cerrados en repositorio.
 
+## 3.2) Incidencia de conexión front-back (Mar 2026)
+
+- [x] Diagnóstico realizado
+  - Frontend desplegado apunta a backend correcto (`horarios-20ey.onrender.com`).
+  - Fallo principal detectado: CORS sin `Access-Control-Allow-Origin` para el dominio de Vercel en respuestas reales.
+- [x] Corrección aplicada en backend (repositorio)
+  - Normalización de orígenes CORS en [src/index.ts](src/index.ts) para aceptar valores con/sin slash final.
+- [ ] Pendiente despliegue del fix en Render
+  - Acción: redeploy del backend para publicar la corrección.
+  - Verificación posterior: `OPTIONS /auth/login` debe incluir `Access-Control-Allow-Origin: https://horarios-six.vercel.app`.
+
 ## 4) Revisión funcional mínima post-deploy
 
 - [ ] Estado actual: validación parcial (falta checklist funcional completo)

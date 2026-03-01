@@ -218,6 +218,19 @@ REGISTRO DE AVANCES
 - Hallazgo de release: el frontend en producción muestra copy de landing antiguo (no coincide con ajustes recientes de claims/branding del repositorio).
 - Acción necesaria antes de go-live: redeploy de Vercel con el último commit aprobado y revalidación de landing.
 
+2026-03-01
+- Incidencia reportada: frontend muestra "error del servidor" tras último deploy.
+- Diagnóstico técnico:
+  * Backend y health online (`/` y `/health` en 200).
+  * Frontend apunta al backend correcto.
+  * Respuestas con `Origin: https://horarios-six.vercel.app` no devolvían `Access-Control-Allow-Origin` (bloqueo CORS en navegador).
+- Fix aplicado en código backend:
+  * Normalización de orígenes CORS (con/sin slash final) en `src/index.ts`.
+  * Origen de frontend productivo (`https://horarios-six.vercel.app`) incluido por defecto en allowlist CORS para evitar dependencia de ajuste manual en Render.
+  * Documentación de formato de `CORS_ORIGINS`/`FRONTEND_URL` actualizada.
+- Validación local del fix: build backend ✅ + tests críticos ✅.
+- Pendiente para cierre operativo: redeploy de Render para publicar el fix y revalidar login desde frontend.
+
 ====================================================
 PRÓXIMO PASO RECOMENDADO
 ====================================================
