@@ -67,6 +67,9 @@ const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
 const isProduction = process.env.NODE_ENV === 'production';
 const defaultProductionOrigins = ['https://horarios-six.vercel.app'];
+const trustedOriginPatterns = [
+    /^https:\/\/horarios-[a-z0-9-]+-adri109s-projects\.vercel\.app$/i,
+];
 const normalizeOrigin = (value) => value.trim().replace(/\/+$/, '');
 const parseOrigins = (value) => (value || '')
     .split(',')
@@ -85,6 +88,16 @@ const allowedOrigins = Array.from(new Set([
         ]
         : []),
 ]));
+const isAllowedOrigin = (origin) => {
+    if (!origin) {
+        return true;
+    }
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalizedOrigin)) {
+        return true;
+    }
+    return trustedOriginPatterns.some((pattern) => pattern.test(normalizedOrigin));
+};
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '1mb';
 const globalRateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
 const globalRateLimitMax = Number(process.env.RATE_LIMIT_MAX || 300);
@@ -122,8 +135,7 @@ app.use(globalLimiter);
 const io = new socket_io_1.Server(httpServer, {
     cors: {
         origin: (origin, callback) => {
-            const normalizedOrigin = origin ? normalizeOrigin(origin) : undefined;
-            if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
+            if (isAllowedOrigin(origin)) {
                 callback(null, true);
             }
             else {
@@ -170,7 +182,7 @@ io.on('connection', (socket) => {
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     const normalizedOrigin = origin ? normalizeOrigin(origin) : undefined;
-    if (normalizedOrigin && allowedOrigins.includes(normalizedOrigin)) {
+    if (normalizedOrigin && isAllowedOrigin(normalizedOrigin)) {
         res.header('Access-Control-Allow-Origin', normalizedOrigin);
     }
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');

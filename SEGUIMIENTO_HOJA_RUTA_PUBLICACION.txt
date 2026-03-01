@@ -231,6 +231,12 @@ REGISTRO DE AVANCES
 - Validación local del fix: build backend ✅ + tests críticos ✅.
 - Pendiente para cierre operativo: redeploy de Render para publicar el fix y revalidar login desde frontend.
 
+2026-03-01
+- Ajuste adicional por dominio preview Vercel detectado en error CORS:
+  * Origin fallido reportado: `https://horarios-8e9hrxve3-adri109s-projects.vercel.app`.
+  * Backend actualizado para permitir previews confiables del proyecto (`*-adri109s-projects.vercel.app`) además del dominio estable.
+- Validación local tras ajuste: build backend ✅ + tests críticos ✅.
+
 ====================================================
 PRÓXIMO PASO RECOMENDADO
 ====================================================

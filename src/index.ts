@@ -34,6 +34,9 @@ const httpServer = createServer(app);
 
 const isProduction = process.env.NODE_ENV === 'production';
 const defaultProductionOrigins = ['https://horarios-six.vercel.app'];
+const trustedOriginPatterns = [
+  /^https:\/\/horarios-[a-z0-9-]+-adri109s-projects\.vercel\.app$/i,
+];
 
 const normalizeOrigin = (value: string) => value.trim().replace(/\/+$/, '');
 
@@ -58,6 +61,20 @@ const allowedOrigins = Array.from(
       : []),
   ])
 );
+
+const isAllowedOrigin = (origin?: string) => {
+  if (!origin) {
+    return true;
+  }
+
+  const normalizedOrigin = normalizeOrigin(origin);
+
+  if (allowedOrigins.includes(normalizedOrigin)) {
+    return true;
+  }
+
+  return trustedOriginPatterns.some((pattern) => pattern.test(normalizedOrigin));
+};
 
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '1mb';
 const globalRateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
@@ -108,9 +125,7 @@ app.use(globalLimiter);
 const io = new Server(httpServer, {
   cors: {
     origin: (origin, callback) => {
-      const normalizedOrigin = origin ? normalizeOrigin(origin) : undefined;
-
-      if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -169,7 +184,7 @@ app.use((req, res, next) => {
   const origin = req.headers.origin;
   const normalizedOrigin = origin ? normalizeOrigin(origin) : undefined;
 
-  if (normalizedOrigin && allowedOrigins.includes(normalizedOrigin)) {
+  if (normalizedOrigin && isAllowedOrigin(normalizedOrigin)) {
     res.header('Access-Control-Allow-Origin', normalizedOrigin);
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
