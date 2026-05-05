@@ -82,9 +82,7 @@ model Salon {
 model Config {
   id                       Int      @id @default(autoincrement())
   salonId                  Int      @unique
-  requireConfirmation      Boolean  @default(false)
-  workersCanCreateServices Boolean  @default(false)
-  canAcceptAppointments    Boolean  @default(true)
+  // Reservada para futuro: permitir a clientes modificar sus reservas desde la página pública.
   canModifyAppointments    Boolean  @default(true)
 
   openingTime              String   @default("09:00")

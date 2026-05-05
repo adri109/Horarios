@@ -16,6 +16,27 @@ const transporter = nodemailer.createTransport({
 });
 
 // ==========================
+// CHECK EMAIL (registro, sin persistir)
+// ==========================
+export const checkRegistrationEmail = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(200).json({
+        available: false,
+        error: 'El email ya está registrado',
+      });
+    }
+    res.status(200).json({ available: true });
+  } catch (error: any) {
+    console.error('💥 Error al comprobar email:', error);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
+
+// ==========================
 // REGISTER
 // ==========================
 export const register = async (req: Request, res: Response) => {
@@ -32,7 +53,6 @@ export const register = async (req: Request, res: Response) => {
     salonName,
     salonAddress,
     salonPhone,
-    config,
   } = req.body;
 
   try {
@@ -69,21 +89,12 @@ export const register = async (req: Request, res: Response) => {
       },
     });
 
-    // 5️⃣ Crear configuración del salón si se proporciona
-    if (config) {
-      await prisma.config.create({
-        data: {
-          salonId: salon.id,
-          requireConfirmation: config.requireConfirmation || false,
-          workersCanCreateServices: config.workersCanCreateServices || false,
-          canAcceptAppointments:
-            config.canAcceptAppointments !== undefined
-              ? config.canAcceptAppointments
-              : true,
-          canModifyAppointments: config.canModifyAppointments || false,
-        },
-      });
-    }
+    // 5️⃣ Crear configuración por defecto del salón
+    await prisma.config.create({
+      data: {
+        salonId: salon.id,
+      },
+    });
 
     // 6️⃣ Crear token JWT
     const token = jwt.sign(

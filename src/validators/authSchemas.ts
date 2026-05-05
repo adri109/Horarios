@@ -1,14 +1,5 @@
 import { z } from 'zod';
 
-const configSchema = z
-  .object({
-    requireConfirmation: z.boolean().optional(),
-    workersCanCreateServices: z.boolean().optional(),
-    canAcceptAppointments: z.boolean().optional(),
-    canModifyAppointments: z.boolean().optional(),
-  })
-  .strict();
-
 export const registerSchema = z
   .object({
     email: z.string().trim().email('Email inválido'),
@@ -18,7 +9,6 @@ export const registerSchema = z
     salonName: z.string().trim().min(2, 'El nombre del salón es obligatorio'),
     salonAddress: z.string().trim().max(255).optional(),
     salonPhone: z.string().trim().min(7).max(25).optional(),
-    config: configSchema.optional(),
   })
   .strict();
 
@@ -26,6 +16,12 @@ export const loginSchema = z
   .object({
     email: z.string().trim().email('Email inválido'),
     password: z.string().min(1, 'La contraseña es obligatoria'),
+  })
+  .strict();
+
+export const checkRegistrationEmailSchema = z
+  .object({
+    email: z.string().trim().email('Email inválido'),
   })
   .strict();
 

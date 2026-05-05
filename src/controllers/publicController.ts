@@ -341,7 +341,9 @@ export const createPublicAppointment = async (req: Request, res: Response) => {
       console.log(`✅ Cliente existente: ${client.name} (ID: ${client.id})`);
     }
 
-    // 6. Crear la cita (stylistId será el admin del salón por defecto)
+    // 6. Crear la cita (stylistId será el admin del salón por defecto).
+    //    Las reservas públicas se confirman automáticamente: el cliente recibe
+    //    el correo y vive la reserva como confirmada desde el primer momento.
     const appointment = await prisma.appointment.create({
       data: {
         clientId: client.id,
@@ -349,7 +351,7 @@ export const createPublicAppointment = async (req: Request, res: Response) => {
         serviceId: service.id,
         startTime: start,
         endTime: end,
-        status: 'PENDING',
+        status: 'CONFIRMED',
       },
       include: {
         client: true,

@@ -47,7 +47,6 @@ const salonInfo = ref({
 
 // Configuración general
 const config = ref({
-  canAcceptAppointments: true,
   openingTime: '09:00',
   closingTime: '18:00',
   serviceIntervalMinutes: 30
@@ -881,16 +880,6 @@ onMounted(() => {
           </button>
         </div>
         
-        <div class="config-grid">
-          <div class="config-item">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="config.canAcceptAppointments" />
-              <span>Aceptar citas online</span>
-            </label>
-            <p class="help-text">Si está activado, los clientes pueden reservar citas desde tu página pública. Si está desactivado, la página solo mostrará información del salón.</p>
-          </div>
-        </div>
-
         <div class="time-config">
           <div class="time-item">
             <label>Intervalo de servicios (minutos)</label>

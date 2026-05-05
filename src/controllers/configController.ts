@@ -30,10 +30,6 @@ export const getConfig = async (req: Request, res: Response) => {
       config = await prisma.config.create({
         data: {
           salonId: salon.id,
-          requireConfirmation: false,
-          workersCanCreateServices: false,
-          canAcceptAppointments: true,
-          canModifyAppointments: true,
           openingTime: '09:00',
           closingTime: '18:00',
           serviceIntervalMinutes: 30
@@ -76,7 +72,6 @@ export const updateConfig = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
     const {
-      canAcceptAppointments,
       openingTime,
       closingTime,
       serviceIntervalMinutes
@@ -98,14 +93,12 @@ export const updateConfig = async (req: Request, res: Response) => {
     const config = await prisma.config.upsert({
       where: { salonId: salon.id },
       update: {
-        canAcceptAppointments,
         openingTime,
         closingTime,
         serviceIntervalMinutes
       },
       create: {
         salonId: salon.id,
-        canAcceptAppointments,
         openingTime,
         closingTime,
         serviceIntervalMinutes
