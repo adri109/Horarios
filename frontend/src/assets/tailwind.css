@@ -107,6 +107,111 @@
   .ds-btn--ghost:hover {
     background: var(--ds-color-surface-muted);
   }
+
+  /* Custom dropdown (replacing native <select>), used in Citas, Informes, etc. */
+  .date-filter {
+    position: relative;
+    min-width: 200px;
+  }
+
+  .date-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, color 0.2s;
+    text-align: left;
+  }
+
+  .date-dropdown-trigger:hover {
+    border-color: #c7d2fe;
+    color: #667eea;
+  }
+
+  .date-dropdown-trigger:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+  }
+
+  .date-dropdown-trigger-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .date-dropdown-chevron {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    color: #94a3b8;
+    transition: transform 0.2s ease;
+  }
+
+  .date-dropdown-trigger:hover .date-dropdown-chevron {
+    color: #667eea;
+  }
+
+  .date-dropdown-chevron--open {
+    transform: rotate(180deg);
+  }
+
+  .date-dropdown-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    margin: 0;
+    padding: 0.35rem;
+    list-style: none;
+    background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    z-index: 40;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .date-dropdown-option {
+    display: block;
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .date-dropdown-option:hover {
+    background: #f8fafc;
+    color: #667eea;
+  }
+
+  .date-dropdown-option--active {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.1) 100%);
+    color: #5b21b6;
+  }
+
+  .date-dropdown-option--active:hover {
+    color: #4c1d95;
+  }
 }
 
 /* Prevenir selección de texto en elementos de UI */

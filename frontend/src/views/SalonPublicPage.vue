@@ -320,13 +320,7 @@
                   </h3>
                   <div class="h-px flex-1 bg-gradient-to-r from-purple-300 via-transparent to-transparent"></div>
                 </div>
-                
-                <div v-if="group.opening && group.closing" class="text-center mb-4">
-                  <span class="text-xs text-gray-600 bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
-                    {{ group.opening }} - {{ group.closing }}
-                  </span>
-                </div>
-                
+
                 <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                   <button
                     v-for="slot in group.slots"
@@ -1001,33 +995,35 @@ function getClosedDays() {
 // Función para agrupar slots por turnos (ahora con objetos que tienen estado)
 function groupSlotsByShifts(slots, schedules) {
   if (!schedules || schedules.length === 0) return [{ name: 'Horario Disponible', slots }];
-  
-  const groups = schedules.map((schedule) => {
+
+  const sorted = [...schedules].sort((a, b) => {
+    const [ah, am] = a.opening.split(':').map(Number);
+    const [bh, bm] = b.opening.split(':').map(Number);
+    return ah * 60 + am - (bh * 60 + bm);
+  });
+
+  const groups = sorted.map((schedule, index) => {
     // Validar que existan las propiedades necesarias
     if (!schedule.opening || !schedule.closing) return null;
-    
+
     const [openHour, openMin] = schedule.opening.split(':').map(Number);
     const [closeHour, closeMin] = schedule.closing.split(':').map(Number);
     const openMinutes = openHour * 60 + openMin;
     const closeMinutes = closeHour * 60 + closeMin;
-    
+
     const shiftSlots = slots.filter(slot => {
       const timeStr = slot.time || slot;
       const [hour, min] = timeStr.split(':').map(Number);
       const slotMinutes = hour * 60 + min;
       return slotMinutes >= openMinutes && slotMinutes < closeMinutes;
     });
-    
-    // Determinar nombre del turno
-    let name = '';
-    if (schedules.length === 1) {
-      name = 'Todo el día';
-    } else if (openHour < 14) {
-      name = '🌅 Turno Mañana';
-    } else {
-      name = '🌆 Turno Tarde';
-    }
-    
+
+    const rangeLabel = `${schedule.opening} - ${schedule.closing}`;
+    const name =
+      schedules.length === 1
+        ? `Todo el día (${rangeLabel})`
+        : `Turno ${index + 1} (${rangeLabel})`;
+
     return {
       name,
       opening: schedule.opening,
@@ -1035,7 +1031,7 @@ function groupSlotsByShifts(slots, schedules) {
       slots: shiftSlots,
     };
   }).filter(group => group && group.slots.length > 0);
-  
+
   return groups;
 }
 

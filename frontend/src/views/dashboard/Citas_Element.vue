@@ -132,44 +132,98 @@
         </button>
       </div>
 
-      <div v-if="viewMode === 'active'" class="filter-buttons">
-        <button 
-          :class="['filter-btn-small', { active: filterStatus === 'all' }]"
-          @click="filterStatus = 'all'"
+      <div
+        v-if="viewMode === 'active'"
+        ref="activeDateDropdownRoot"
+        class="date-filter"
+      >
+        <button
+          type="button"
+          class="date-dropdown-trigger"
+          aria-haspopup="listbox"
+          :aria-expanded="showActiveDateMenu"
+          @click.stop="toggleActiveDateMenu"
         >
-          Todas
+          <span class="date-dropdown-trigger-label">{{ activeDateLabel }}</span>
+          <svg
+            class="date-dropdown-chevron"
+            :class="{ 'date-dropdown-chevron--open': showActiveDateMenu }"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
         </button>
-        <button 
-          :class="['filter-btn-small', { active: filterStatus === 'PENDING' }]"
-          @click="filterStatus = 'PENDING'"
+        <ul
+          v-show="showActiveDateMenu"
+          class="date-dropdown-panel"
+          role="listbox"
+          :aria-label="'Filtrar por fecha'"
         >
-          Pendientes
-        </button>
-        <button 
-          :class="['filter-btn-small', { active: filterStatus === 'CONFIRMED' }]"
-          @click="filterStatus = 'CONFIRMED'"
-        >
-          Confirmadas
-        </button>
+          <li v-for="opt in activeDateOptions" :key="opt.value" role="none">
+            <button
+              type="button"
+              role="option"
+              class="date-dropdown-option"
+              :class="{ 'date-dropdown-option--active': dateFilter === opt.value }"
+              :aria-selected="dateFilter === opt.value"
+              @click="selectActiveDate(opt.value)"
+            >
+              {{ opt.label }}
+            </button>
+          </li>
+        </ul>
       </div>
 
-      <div v-if="viewMode === 'active'" class="date-filter">
-        <select v-model="dateFilter" class="date-select">
-          <option value="all">Todas las fechas</option>
-          <option value="today">Hoy</option>
-          <option value="week">Esta semana</option>
-          <option value="month">Este mes</option>
-        </select>
-      </div>
-
-      <div v-if="viewMode === 'archived'" class="date-filter">
-        <select v-model="archivedDateFilter" class="date-select">
-          <option value="all">Todo el historial</option>
-          <option value="last-week">Última semana</option>
-          <option value="last-month">Último mes</option>
-          <option value="last-3-months">Últimos 3 meses</option>
-          <option value="last-year">Último año</option>
-        </select>
+      <div
+        v-if="viewMode === 'archived'"
+        ref="archivedDateDropdownRoot"
+        class="date-filter"
+      >
+        <button
+          type="button"
+          class="date-dropdown-trigger"
+          aria-haspopup="listbox"
+          :aria-expanded="showArchivedDateMenu"
+          @click.stop="toggleArchivedDateMenu"
+        >
+          <span class="date-dropdown-trigger-label">{{ archivedDateLabel }}</span>
+          <svg
+            class="date-dropdown-chevron"
+            :class="{ 'date-dropdown-chevron--open': showArchivedDateMenu }"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+        <ul
+          v-show="showArchivedDateMenu"
+          class="date-dropdown-panel"
+          role="listbox"
+          :aria-label="'Rango del historial'"
+        >
+          <li v-for="opt in archivedDateOptions" :key="opt.value" role="none">
+            <button
+              type="button"
+              role="option"
+              class="date-dropdown-option"
+              :class="{ 'date-dropdown-option--active': archivedDateFilter === opt.value }"
+              :aria-selected="archivedDateFilter === opt.value"
+              @click="selectArchivedDate(opt.value)"
+            >
+              {{ opt.label }}
+            </button>
+          </li>
+        </ul>
       </div>
     </div>
 
@@ -369,7 +423,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import {
   fetchAppointmentsRequest,
   updateAppointmentStatusRequest,
@@ -381,13 +435,76 @@ const { on, off } = useSocket();
 const loading = ref(true);
 const citas = ref([]);
 const searchQuery = ref('');
-const filterStatus = ref('all');
 const dateFilter = ref('all');
 const viewMode = ref('active'); // 'active' o 'archived'
 const archivedDateFilter = ref('all');
+const showActiveDateMenu = ref(false);
+const showArchivedDateMenu = ref(false);
+const activeDateDropdownRoot = ref(null);
+const archivedDateDropdownRoot = ref(null);
+
+const activeDateOptions = [
+  { value: 'all', label: 'Todas las fechas' },
+  { value: 'today', label: 'Hoy' },
+  { value: 'week', label: 'Esta semana' },
+  { value: 'month', label: 'Este mes' },
+];
+
+const archivedDateOptions = [
+  { value: 'all', label: 'Todo el historial' },
+  { value: 'last-week', label: 'Última semana' },
+  { value: 'last-month', label: 'Último mes' },
+  { value: 'last-3-months', label: 'Últimos 3 meses' },
+  { value: 'last-year', label: 'Último año' },
+];
+
+const activeDateLabel = computed(
+  () => activeDateOptions.find((o) => o.value === dateFilter.value)?.label ?? 'Todas las fechas',
+);
+
+const archivedDateLabel = computed(
+  () => archivedDateOptions.find((o) => o.value === archivedDateFilter.value)?.label ?? 'Todo el historial',
+);
+
+function closeDateDropdowns() {
+  showActiveDateMenu.value = false;
+  showArchivedDateMenu.value = false;
+}
+
+function toggleActiveDateMenu() {
+  showArchivedDateMenu.value = false;
+  showActiveDateMenu.value = !showActiveDateMenu.value;
+}
+
+function toggleArchivedDateMenu() {
+  showActiveDateMenu.value = false;
+  showArchivedDateMenu.value = !showArchivedDateMenu.value;
+}
+
+function selectActiveDate(value) {
+  dateFilter.value = value;
+  closeDateDropdowns();
+}
+
+function selectArchivedDate(value) {
+  archivedDateFilter.value = value;
+  closeDateDropdowns();
+}
+
+function onDocumentClickCloseDateMenus(e) {
+  const t = e.target;
+  if (activeDateDropdownRoot.value?.contains(t)) return;
+  if (archivedDateDropdownRoot.value?.contains(t)) return;
+  closeDateDropdowns();
+}
+
 const showDetailModal = ref(false);
 const selectedCita = ref(null);
 const statsPeriod = ref('today'); // Periodo para las estadísticas: today, week, month, year
+
+watch(viewMode, () => {
+  closeDateDropdowns();
+});
 
 // Determinar si una cita está archivada
 const isArchived = (cita) => {
@@ -456,11 +573,6 @@ const filteredCitas = computed(() => {
       c.service.name.toLowerCase().includes(query) ||
       (c.client.phone && c.client.phone.includes(query))
     );
-  }
-
-  // Filtrar por estado (solo en vista activa)
-  if (viewMode.value === 'active' && filterStatus.value !== 'all') {
-    result = result.filter(c => c.status === filterStatus.value);
   }
 
   // Filtrar por fecha
@@ -631,6 +743,7 @@ const handleAppointmentUpdate = (data) => {
 };
 
 onMounted(() => {
+  document.addEventListener('click', onDocumentClickCloseDateMenus);
   fetchCitas();
   
   // Escuchar eventos de citas
@@ -640,6 +753,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocumentClickCloseDateMenus);
   off('appointment-created', handleAppointmentUpdate);
   off('appointment-updated', handleAppointmentUpdate);
   off('appointment-cancelled', handleAppointmentUpdate);
@@ -866,50 +980,7 @@ onBeforeUnmount(() => {
   border-color: transparent;
 }
 
-.filter-btn-small {
-  padding: 0.625rem 1rem;
-  border: 2px solid #e2e8f0;
-  background: white;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #64748b;
-}
-
-.filter-btn-small:hover {
-  border-color: #667eea;
-  color: #667eea;
-}
-
-.filter-btn-small.active {
-  background: #667eea;
-  color: white;
-  border-color: transparent;
-}
-
-.date-filter {
-  min-width: 180px;
-}
-
-.date-select {
-  width: 100%;
-  padding: 0.875rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.date-select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
+/* Custom dropdown styles: .date-filter, .date-dropdown-* (see tailwind.css @layer components) */
 
 /* Loading */
 .loading {

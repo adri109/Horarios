@@ -168,6 +168,10 @@ model Appointment {
   stylist   User   @relation("stylistAppointments", fields: [stylistId], references: [id])
   service   Service @relation(fields: [serviceId], references: [id])
   payment   Payment?
+
+  @@index([startTime])
+  @@index([serviceId, startTime])
+  @@index([status, startTime])
 }
 
 enum AppointmentStatus {

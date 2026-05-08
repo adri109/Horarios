@@ -21,15 +21,15 @@
     </div>
 
     <!-- Estadísticas -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl p-6 shadow-lg">
-        <div class="flex items-center justify-between">
-          <div>
+        <div class="grid min-h-[4.25rem] grid-cols-[minmax(0,1fr)_3rem] items-center gap-x-3">
+          <div class="min-w-0 flex flex-col justify-center">
             <p class="text-purple-100 text-sm">Total Personal</p>
-            <p class="text-3xl font-bold mt-1">{{ workers.length }}</p>
+            <p class="text-3xl font-bold mt-1 leading-tight tabular-nums">{{ workers.length }}</p>
           </div>
-          <div class="text-5xl opacity-30">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-12 h-12">
+          <div class="flex h-12 w-full items-center justify-center opacity-30" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-12 w-12 shrink-0">
               <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.5 7.5 0 0115 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
             </svg>
           </div>
@@ -37,28 +37,14 @@
       </div>
 
       <div class="bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl p-6 shadow-lg">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-purple-100 text-sm">Activos</p>
-            <p class="text-3xl font-bold mt-1">{{ workers.length }}</p>
+        <div class="grid min-h-[4.25rem] grid-cols-[minmax(0,1fr)_3rem] items-center gap-x-3">
+          <div class="min-w-0 flex flex-col justify-center">
+            <p class="text-purple-100 text-sm">Activos Ahora</p>
+            <p class="text-3xl font-bold mt-1 leading-tight tabular-nums">{{ workers.length }}</p>
           </div>
-          <div class="text-5xl opacity-30">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-12 h-12">
+          <div class="flex h-12 w-full items-center justify-center opacity-30" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-12 w-12 shrink-0">
               <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-xl p-6 shadow-lg">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-pink-100 text-sm">Roles</p>
-            <p class="text-3xl font-bold mt-1">Trabajadores</p>
-          </div>
-          <div class="text-5xl opacity-30">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-12 h-12">
-              <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />
             </svg>
           </div>
         </div>

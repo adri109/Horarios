@@ -7,11 +7,15 @@ import { alertDialog, confirmDialog } from '@/composables/useDialog';
 // Verificar permisos
 usePermissions('canViewMarketing');
 
+/** Pestaña principal: campañas vs promociones (placeholder) */
+const mainSection = ref('marketing'); // 'marketing' | 'promociones'
+
 // Estado
 const clients = ref([]);
 const loading = ref(true);
 const selectedChannel = ref('email'); // email, whatsapp, both
-const campaignType = ref('promotional'); // promotional, reminder, custom
+/** Solo una vista visible: creación o vista previa */
+const marketingPanel = ref('create'); // 'create' | 'preview'
 
 // Datos de la campaña
 const campaignData = ref({
@@ -23,32 +27,16 @@ const campaignData = ref({
   scheduleTime: ''
 });
 
-// Plantillas predefinidas
+// Plantillas por canal (contenido inicial al crear / cambiar canal)
 const templates = {
   email: {
-    promotional: {
-      subject: '¡Oferta especial solo para ti!',
-      message: 'Hola {nombre},\n\nQueremos agradecerte tu fidelidad con una oferta exclusiva.\n\n✨ Obtén un 20% de descuento en tu próxima cita\n\n👉 Reserva ahora: {salon_url}\n\nEsta oferta es válida hasta fin de mes.\n\n¡Te esperamos!\n\nEquipo {salon_name}'
-    },
-    reminder: {
-      subject: 'No olvides tu cita con nosotros',
-      message: 'Hola {nombre},\n\nTe recordamos que tienes una cita próximamente.\n\n💕 ¿Hace tiempo que no nos visitas? ¡Te echamos de menos!\n\n👉 Reserva tu próxima cita: {salon_url}\n\nEstamos aquí para cuidarte.\n\nSaludos,\nEquipo {salon_name}'
-    },
-    custom: {
-      subject: '',
-      message: ''
-    }
+    subject: '¡Oferta especial solo para ti!',
+    message:
+      'Hola {nombre},\n\nQueremos agradecerte tu fidelidad con una oferta exclusiva.\n\n✨ Obtén un 20% de descuento en tu próxima cita\n\n👉 Reserva ahora: {salon_url}\n\nEsta oferta es válida hasta fin de mes.\n\n¡Te esperamos!\n\nEquipo {salon_name}'
   },
   whatsapp: {
-    promotional: {
-      message: '🎉 *¡Oferta especial!*\n\nHola {nombre},\n\nTenemos algo especial para ti:\n✨ *20% de descuento* en tu próxima cita\n\n👉 Reserva aquí: {salon_url}\n\nVálido hasta fin de mes.\n\n_{salon_name}_'
-    },
-    reminder: {
-      message: '💕 *¡Te echamos de menos!*\n\nHola {nombre},\n\n¿Hace tiempo que no vienes? 😊\n\n👉 Reserva tu próxima cita aquí:\n{salon_url}\n\n_{salon_name}_'
-    },
-    custom: {
-      message: ''
-    }
+    message:
+      '🎉 *¡Oferta especial!*\n\nHola {nombre},\n\nTenemos algo especial para ti:\n✨ *20% de descuento* en tu próxima cita\n\n👉 Reserva aquí: {salon_url}\n\nVálido hasta fin de mes.\n\n_{salon_name}_'
   }
 };
 
@@ -82,13 +70,11 @@ const loadClients = async () => {
 // Aplicar plantilla
 const applyTemplate = () => {
   if (selectedChannel.value === 'email') {
-    const template = templates.email[campaignType.value];
-    campaignData.value.subject = template.subject;
-    campaignData.value.message = template.message;
+    campaignData.value.subject = templates.email.subject;
+    campaignData.value.message = templates.email.message;
   } else if (selectedChannel.value === 'whatsapp') {
-    const template = templates.whatsapp[campaignType.value];
     campaignData.value.subject = '';
-    campaignData.value.message = template.message;
+    campaignData.value.message = templates.whatsapp.message;
   }
 };
 
@@ -151,7 +137,6 @@ const sendCampaign = async () => {
       '/marketing/send-campaign',
       {
         channel: selectedChannel.value,
-        type: campaignType.value,
         subject: campaignData.value.subject,
         message: campaignData.value.message,
         sendToAll: campaignData.value.sendToAll,
@@ -179,7 +164,7 @@ const sendCampaign = async () => {
 };
 
 // Watch para aplicar plantilla automáticamente
-const handleChannelOrTypeChange = () => {
+const handleChannelChange = () => {
   applyTemplate();
 };
 
@@ -193,25 +178,96 @@ onMounted(() => {
   <div class="marketing-container">
     <!-- Header -->
     <div class="header">
-      <div>
+      <div class="header-text">
         <h1 class="title">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" />
           </svg>
           Marketing y Promociones
         </h1>
-        <p class="subtitle">Crea campañas para fidelizar y atraer clientes</p>
+        <p class="subtitle">
+          {{ mainSection === 'marketing' ? 'Crea campañas para fidelizar y atraer clientes' : 'Gestiona promociones para tu salón' }}
+        </p>
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="flex justify-center items-center h-64">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+    <!-- Pestañas: Marketing | Promociones -->
+    <div
+      class="main-section-tabs"
+      role="tablist"
+      aria-label="Marketing y Promociones"
+    >
+      <button
+        id="tab-marketing"
+        type="button"
+        role="tab"
+        :aria-selected="mainSection === 'marketing'"
+        class="main-section-tab"
+        :class="{ active: mainSection === 'marketing' }"
+        @click="mainSection = 'marketing'"
+      >
+        Marketing
+      </button>
+      <button
+        id="tab-promociones"
+        type="button"
+        role="tab"
+        :aria-selected="mainSection === 'promociones'"
+        class="main-section-tab"
+        :class="{ active: mainSection === 'promociones' }"
+        @click="mainSection = 'promociones'"
+      >
+        Promociones
+      </button>
     </div>
 
-    <div v-else class="content-grid">
-      <!-- Panel izquierdo: Configuración -->
-      <div class="config-panel">
+    <!-- Contenido Marketing (campañas email / vista previa) -->
+    <div
+      v-show="mainSection === 'marketing'"
+      id="panel-marketing"
+      role="tabpanel"
+      aria-labelledby="tab-marketing"
+    >
+      <!-- Loading -->
+      <div v-if="loading" class="flex justify-center items-center h-64">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+
+      <template v-else>
+        <div class="marketing-sub-toolbar">
+          <div
+            class="panel-switch"
+            role="tablist"
+            aria-label="Alternar vista del panel"
+          >
+            <button
+              id="marketing-tab-create"
+              type="button"
+              role="tab"
+              :aria-selected="marketingPanel === 'create'"
+              class="panel-switch-opt"
+              :class="{ active: marketingPanel === 'create' }"
+              @click="marketingPanel = 'create'"
+            >
+              Creación
+            </button>
+            <button
+              id="marketing-tab-preview"
+              type="button"
+              role="tab"
+              :aria-selected="marketingPanel === 'preview'"
+              class="panel-switch-opt"
+              :class="{ active: marketingPanel === 'preview' }"
+              @click="marketingPanel = 'preview'"
+            >
+              Vista previa
+            </button>
+          </div>
+        </div>
+
+        <div class="content-stage">
+      <!-- Panel: Configuración -->
+      <div v-show="marketingPanel === 'create'" class="config-panel">
         <!-- Estadísticas rápidas -->
         <div class="stats-mini">
           <div class="stat-mini">
@@ -248,8 +304,9 @@ onMounted(() => {
           </h3>
           <div class="channel-buttons">
             <button 
+              type="button"
               :class="['channel-btn', { active: selectedChannel === 'email' }]"
-              @click="selectedChannel = 'email'; handleChannelOrTypeChange()"
+              @click="selectedChannel = 'email'; handleChannelChange()"
             >
               <span class="channel-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -259,8 +316,10 @@ onMounted(() => {
               <span>Email</span>
             </button>
             <button 
-              :class="['channel-btn', { active: selectedChannel === 'whatsapp' }]"
-              @click="selectedChannel = 'whatsapp'; handleChannelOrTypeChange()"
+              type="button"
+              class="channel-btn"
+              disabled
+              aria-disabled="true"
             >
               <span class="channel-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -270,8 +329,10 @@ onMounted(() => {
               <span>WhatsApp</span>
             </button>
             <button 
-              :class="['channel-btn', { active: selectedChannel === 'both' }]"
-              @click="selectedChannel = 'both'; handleChannelOrTypeChange()"
+              type="button"
+              class="channel-btn"
+              disabled
+              aria-disabled="true"
             >
               <span class="channel-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -281,26 +342,6 @@ onMounted(() => {
               <span>Ambos</span>
             </button>
           </div>
-        </div>
-
-        <!-- Tipo de campaña -->
-        <div class="config-section">
-          <h3 class="section-subtitle flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
-            </svg>
-            Tipo de campaña
-          </h3>
-          <select 
-            v-model="campaignType" 
-            @change="handleChannelOrTypeChange"
-            class="input-select"
-          >
-            <option value="promotional">Oferta promocional</option>
-            <option value="reminder">Recordatorio</option>
-            <option value="custom">Personalizado</option>
-          </select>
         </div>
 
         <!-- Asunto (solo email) -->
@@ -400,8 +441,8 @@ onMounted(() => {
         </button>
       </div>
 
-      <!-- Panel derecho: Vista previa -->
-      <div class="preview-panel">
+      <!-- Panel: Vista previa -->
+      <div v-show="marketingPanel === 'preview'" class="preview-panel">
         <h3 class="preview-title flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -462,6 +503,21 @@ onMounted(() => {
         </div>
       </div>
     </div>
+      </template>
+    </div>
+
+    <div
+      v-show="mainSection === 'promociones'"
+      class="promociones-coming"
+      role="tabpanel"
+      id="panel-promociones"
+      aria-labelledby="tab-promociones"
+    >
+      <p class="promociones-coming-title">Próximamente</p>
+      <p class="promociones-coming-sub">
+        La creación de promociones estará disponible en breve.
+      </p>
+    </div>
   </div>
 </template>
 
@@ -475,6 +531,58 @@ onMounted(() => {
 
 .header {
   margin-bottom: 2rem;
+}
+
+.header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header-text {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.panel-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 0.25rem;
+  background: #e5e7eb;
+  border-radius: 0.75rem;
+  gap: 0.25rem;
+}
+
+.panel-switch-opt {
+  position: relative;
+  z-index: 1;
+  padding: 0.5rem 1.125rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4b5563;
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.panel-switch-opt:hover:not(.active) {
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.panel-switch-opt.active {
+  color: #fff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.35);
+}
+
+.panel-switch-opt:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #667eea;
 }
 
 .title {
@@ -502,10 +610,77 @@ onMounted(() => {
   font-size: 1rem;
 }
 
-.content-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+.main-section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.main-section-tab {
+  padding: 0.625rem 1.25rem;
+  margin-bottom: -1px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.main-section-tab:hover {
+  color: #374151;
+}
+
+.main-section-tab.active {
+  color: #5b21b6;
+  border-bottom-color: #667eea;
+}
+
+.main-section-tab:focus-visible {
+  outline: none;
+  border-radius: 0.375rem 0.375rem 0 0;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(102, 126, 234, 0.45);
+}
+
+.marketing-sub-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+  min-height: 2.75rem;
+  align-items: center;
+}
+
+.promociones-coming {
+  background: white;
+  border-radius: 1rem;
+  padding: 4rem 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+  border: 2px dashed #e5e7eb;
+  text-align: center;
+}
+
+.promociones-coming-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.promociones-coming-sub {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.content-stage {
+  display: block;
 }
 
 .config-panel,
@@ -514,6 +689,7 @@ onMounted(() => {
   border-radius: 1rem;
   padding: 1.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-width: 0;
 }
 
 .stats-mini {
@@ -611,6 +787,25 @@ onMounted(() => {
 
 .channel-btn.active .channel-icon svg {
   color: white;
+}
+
+.channel-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: #9ca3af;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+.channel-btn:disabled .channel-icon svg {
+  color: #9ca3af;
+}
+
+.channel-btn:disabled:hover {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  transform: none;
 }
 
 .channel-icon {
@@ -919,9 +1114,15 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-@media (max-width: 1024px) {
-  .content-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 640px) {
+  .panel-switch {
+    width: 100%;
+  }
+
+  .panel-switch-opt {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0.5rem;
   }
 }
 </style>

@@ -25,50 +25,80 @@ export const getClients = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No tienes un salón asociado' });
     }
 
-    // Obtener clientes con estadísticas de citas
-    const clients = await prisma.client.findMany({
-      where: { salonId },
-      include: {
-        appointments: {
-          include: {
-            service: true
-          },
-          orderBy: {
-            startTime: 'desc'
-          }
-        }
-      },
-      orderBy: {
-        id: 'desc'
+    /** Una query de fichas + una de todas las citas del salón; el resto es agregación en memoria . */
+    const [clients, salonAppointments] = await Promise.all([
+      prisma.client.findMany({
+        where: { salonId },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true,
+        },
+        orderBy: { id: 'desc' },
+      }),
+      prisma.appointment.findMany({
+        where: { service: { salonId } },
+        select: {
+          clientId: true,
+          status: true,
+          startTime: true,
+          service: { select: { name: true, price: true } },
+        },
+      }),
+    ]);
+
+    type Agg = {
+      total: number;
+      completed: number;
+      cancelled: number;
+      totalSpent: number;
+      lastStart: Date | null;
+      lastServiceName: string | null;
+    };
+    const aggByClient = new Map<number, Agg>();
+
+    for (const apt of salonAppointments) {
+      let a = aggByClient.get(apt.clientId);
+      if (!a) {
+        a = {
+          total: 0,
+          completed: 0,
+          cancelled: 0,
+          totalSpent: 0,
+          lastStart: null,
+          lastServiceName: null,
+        };
+        aggByClient.set(apt.clientId, a);
       }
-    });
+      a.total += 1;
+      if (apt.status === 'COMPLETED') {
+        a.completed += 1;
+        a.totalSpent += apt.service.price;
+      }
+      if (apt.status === 'CANCELLED') {
+        a.cancelled += 1;
+      }
+      const st = new Date(apt.startTime);
+      if (!a.lastStart || st > a.lastStart) {
+        a.lastStart = st;
+        a.lastServiceName = apt.service.name;
+      }
+    }
 
-    // Calcular estadísticas para cada cliente
-    const clientsWithStats = clients.map(client => {
-      const totalAppointments = client.appointments.length;
-      const completedAppointments = client.appointments.filter(
-        apt => apt.status === 'COMPLETED'
-      ).length;
-      const cancelledAppointments = client.appointments.filter(
-        apt => apt.status === 'CANCELLED'
-      ).length;
-      const totalSpent = client.appointments
-        .filter(apt => apt.status === 'COMPLETED')
-        .reduce((sum, apt) => sum + apt.service.price, 0);
-      
-      const lastAppointment = client.appointments[0];
-
+    const clientsWithStats = clients.map((client) => {
+      const a = aggByClient.get(client.id);
       return {
         id: client.id,
         name: client.name,
         phone: client.phone,
         email: client.email,
-        totalAppointments,
-        completedAppointments,
-        cancelledAppointments,
-        totalSpent,
-        lastAppointmentDate: lastAppointment?.startTime || null,
-        lastService: lastAppointment?.service?.name || null
+        totalAppointments: a?.total ?? 0,
+        completedAppointments: a?.completed ?? 0,
+        cancelledAppointments: a?.cancelled ?? 0,
+        totalSpent: a?.totalSpent ?? 0,
+        lastAppointmentDate: a?.lastStart ?? null,
+        lastService: a?.lastServiceName ?? null,
       };
     });
 

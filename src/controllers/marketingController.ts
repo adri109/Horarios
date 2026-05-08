@@ -4,7 +4,6 @@ import prisma from '../utils/prisma';
 
 interface CampaignRequest {
   channel: 'email' | 'whatsapp' | 'both';
-  type: 'promotional' | 'reminder' | 'custom';
   subject?: string;
   message: string;
   sendToAll: boolean;

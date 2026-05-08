@@ -4,7 +4,11 @@
     <div class="flex-1 flex flex-col overflow-hidden">
       <Header />
       <div class="flex-1 overflow-auto p-4">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </div>
     </div>
   </div>

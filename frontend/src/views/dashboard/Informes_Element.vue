@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import axios from '@/utils/axios';
 import { alertDialog } from '@/composables/useDialog';
 import { usePermissions } from '../../composables/usePermissions';
+import CustomCalendar from '@/components/CustomCalendar.vue';
 
 // Verificar permisos
 usePermissions('canViewReports');
@@ -13,6 +14,38 @@ const clients = ref([]);
 const services = ref([]);
 const loading = ref(true);
 const selectedPeriod = ref('month'); // week, month, year, all
+
+const periodOptions = [
+  { value: 'week', label: 'Última semana' },
+  { value: 'month', label: 'Último mes' },
+  { value: 'year', label: 'Último año' },
+  { value: 'all', label: 'Todos' },
+];
+
+const showPeriodMenu = ref(false);
+const periodDropdownRoot = ref(null);
+
+const periodLabel = computed(
+  () => periodOptions.find((o) => o.value === selectedPeriod.value)?.label ?? 'Último mes',
+);
+
+function closePeriodMenu() {
+  showPeriodMenu.value = false;
+}
+
+function togglePeriodMenu() {
+  showPeriodMenu.value = !showPeriodMenu.value;
+}
+
+function selectPeriod(value) {
+  selectedPeriod.value = value;
+  closePeriodMenu();
+}
+
+function onDocumentClickClosePeriodMenu(e) {
+  if (periodDropdownRoot.value?.contains(e.target)) return;
+  closePeriodMenu();
+}
 
 // Fechas para filtros
 const startDate = ref('');
@@ -138,6 +171,27 @@ const topClients = computed(() => {
     .map(([name, count]) => ({ name, count }));
 });
 
+/** Horas de inicio más frecuentes (reloj local), para gráfico de barras */
+const frequentHours = computed(() => {
+  const hourCount = {};
+  for (const a of filteredAppointments.value) {
+    const h = new Date(a.startTime).getHours();
+    hourCount[h] = (hourCount[h] || 0) + 1;
+  }
+  const rows = Object.entries(hourCount)
+    .map(([hour, count]) => ({ hour: Number(hour), count }))
+    .sort((a, b) => b.count - a.count);
+  const max = rows.length ? Math.max(...rows.map((r) => r.count)) : 1;
+  return rows.slice(0, 12).map((r) => ({
+    ...r,
+    barPct: max ? (r.count / max) * 100 : 0,
+  }));
+});
+
+function formatHourSlot(h) {
+  return `${String(h).padStart(2, '0')}:00`;
+}
+
 // Función para descargar CSV
 const downloadCSV = (data, filename) => {
   if (data.length === 0) {
@@ -230,8 +284,21 @@ const exportTopClients = () => {
   downloadCSV(data, 'clientes_frecuentes');
 };
 
+const exportFrequentHours = () => {
+  const data = frequentHours.value.map((r) => ({
+    Hora: formatHourSlot(r.hour),
+    Citas: r.count,
+  }));
+  downloadCSV(data, 'horas_frecuentes');
+};
+
 onMounted(() => {
+  document.addEventListener('click', onDocumentClickClosePeriodMenu);
   loadData();
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocumentClickClosePeriodMenu);
 });
 </script>
 
@@ -267,43 +334,83 @@ onMounted(() => {
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <!-- Período predefinido -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Período</label>
-            <select 
-              v-model="selectedPeriod" 
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="week">Última semana</option>
-              <option value="month">Último mes</option>
-              <option value="year">Último año</option>
-              <option value="all">Todos</option>
-            </select>
+            <label class="filter-field-label">Período</label>
+            <div ref="periodDropdownRoot" class="relative min-w-0">
+              <button
+                type="button"
+                class="date-dropdown-trigger"
+                aria-haspopup="listbox"
+                :aria-expanded="showPeriodMenu"
+                @click.stop="togglePeriodMenu"
+              >
+                <span class="date-dropdown-trigger-label">{{ periodLabel }}</span>
+                <svg
+                  class="date-dropdown-chevron"
+                  :class="{ 'date-dropdown-chevron--open': showPeriodMenu }"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="2"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
+              <ul
+                v-show="showPeriodMenu"
+                class="date-dropdown-panel z-50"
+                role="listbox"
+                aria-label="Período del informe"
+              >
+                <li v-for="opt in periodOptions" :key="opt.value" role="none">
+                  <button
+                    type="button"
+                    role="option"
+                    class="date-dropdown-option"
+                    :class="{ 'date-dropdown-option--active': selectedPeriod === opt.value }"
+                    :aria-selected="selectedPeriod === opt.value"
+                    @click="selectPeriod(opt.value)"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <!-- Fecha inicio -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha inicio</label>
-            <input 
-              v-model="startDate" 
-              type="date" 
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            <label class="filter-field-label">Fecha inicio</label>
+            <CustomCalendar
+              v-model="startDate"
+              allow-past
+              compact-label
+              emit-empty-string
+              hide-trigger-icon
+              placeholder="Desde…"
             />
           </div>
 
           <!-- Fecha fin -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha fin</label>
-            <input 
-              v-model="endDate" 
-              type="date" 
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            <label class="filter-field-label">Fecha fin</label>
+            <CustomCalendar
+              v-model="endDate"
+              allow-past
+              compact-label
+              emit-empty-string
+              hide-trigger-icon
+              placeholder="Hasta…"
             />
           </div>
 
           <!-- Botón limpiar -->
           <div class="flex items-end">
             <button 
+              type="button"
               @click="startDate = ''; endDate = ''; selectedPeriod = 'month'" 
-              class="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              class="filters-clear-button w-full transition-colors"
             >
               Limpiar filtros
             </button>
@@ -314,11 +421,11 @@ onMounted(() => {
       <!-- Estadísticas principales -->
       <div class="stats-grid-large">
         <!-- Ingresos totales -->
-        <div class="stat-card-large stat-green">
+        <div class="stat-card-large">
           <div class="stat-header">
             <span class="stat-label-large">Ingresos Totales</span>
             <span class="stat-icon-large">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </span>
@@ -328,11 +435,11 @@ onMounted(() => {
         </div>
 
         <!-- Citas completadas -->
-        <div class="stat-card-large stat-blue">
+        <div class="stat-card-large">
           <div class="stat-header">
             <span class="stat-label-large">Citas Completadas</span>
             <span class="stat-icon-large">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </span>
@@ -342,11 +449,11 @@ onMounted(() => {
         </div>
 
         <!-- Total citas -->
-        <div class="stat-card-large stat-purple">
+        <div class="stat-card-large">
           <div class="stat-header">
             <span class="stat-label-large">Total Citas</span>
             <span class="stat-icon-large">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
               </svg>
             </span>
@@ -356,11 +463,11 @@ onMounted(() => {
         </div>
 
         <!-- Citas canceladas -->
-        <div class="stat-card-large stat-red">
+        <div class="stat-card-large">
           <div class="stat-header">
             <span class="stat-label-large">Citas Canceladas</span>
             <span class="stat-icon-large">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </span>
@@ -443,39 +550,82 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Clientes más frecuentes -->
-      <div class="info-card">
-        <div class="card-header">
-          <h2 class="card-title flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-            </svg>
-            Clientes Más Frecuentes
-          </h2>
-          <button 
-            @click="exportTopClients" 
-            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors flex items-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-            </svg>
-            CSV
-          </button>
-        </div>
-        <div v-if="topClients.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div 
-            v-for="(client, index) in topClients" 
-            :key="index"
-            class="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200"
-          >
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-lg font-bold text-blue-600">{{ index + 1 }}.</span>
-              <span class="font-medium text-gray-800 truncate">{{ client.name }}</span>
-            </div>
-            <span class="text-sm text-gray-600">{{ client.count }} citas</span>
+      <!-- Clientes + Horas más frecuentes (mitad / mitad) -->
+      <div class="informes-clients-hours-row">
+        <div class="info-card informes-half-section">
+          <div class="card-header">
+            <h2 class="card-title flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+              </svg>
+              Clientes Más Frecuentes
+            </h2>
+            <button 
+              type="button"
+              @click="exportTopClients" 
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors flex items-center gap-2 shrink-0"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              CSV
+            </button>
           </div>
+          <div v-if="topClients.length > 0" class="clients-list-fill">
+            <div 
+              v-for="(client, index) in topClients" 
+              :key="index"
+              class="client-mini-card"
+            >
+              <div class="client-mini-card-inner">
+                <span class="client-mini-rank">{{ index + 1 }}.</span>
+                <div class="client-mini-main">
+                  <p class="client-mini-name">{{ client.name }}</p>
+                  <p class="client-mini-meta">{{ client.count }} citas</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p v-else class="text-gray-500 text-center py-8">No hay datos disponibles</p>
         </div>
-        <p v-else class="text-gray-500 text-center py-8">No hay datos disponibles</p>
+
+        <div class="info-card informes-half-section">
+          <div class="card-header">
+            <h2 class="card-title flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Horas Más Frecuentes
+            </h2>
+            <button 
+              type="button"
+              @click="exportFrequentHours" 
+              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm transition-colors flex items-center gap-2 shrink-0"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              CSV
+            </button>
+          </div>
+          <div v-if="frequentHours.length > 0" class="hours-bar-chart">
+            <div
+              v-for="row in frequentHours"
+              :key="row.hour"
+              class="hours-bar-row"
+            >
+              <span class="hours-bar-label">{{ formatHourSlot(row.hour) }}</span>
+              <div class="hours-bar-track" role="img" :aria-label="`${row.count} citas a las ${formatHourSlot(row.hour)}`">
+                <div
+                  class="hours-bar-fill"
+                  :style="{ width: `${row.barPct}%` }"
+                />
+              </div>
+              <span class="hours-bar-count">{{ row.count }}</span>
+            </div>
+          </div>
+          <p v-else class="text-gray-500 text-center py-8">No hay citas en el período seleccionado</p>
+        </div>
       </div>
 
       <!-- Botones de exportación global -->
@@ -568,13 +718,8 @@ onMounted(() => {
   color: #1f2937;
 }
 
-.filters-section .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.filters-section label {
+.filters-section label,
+.filter-field-label {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
@@ -582,8 +727,7 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
-.filters-section input,
-.filters-section select {
+.filters-section input {
   width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid #d1d5db;
@@ -591,69 +735,53 @@ onMounted(() => {
   transition: all 0.2s;
 }
 
-.filters-section input:focus,
-.filters-section select:focus {
+.filters-section input:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.filters-section button {
+.filters-section .filters-clear-button {
   padding: 0.75rem 1rem;
   background: #e5e7eb;
   color: #374151;
-  border-radius: 0.5rem;
+  border-radius: 10px;
   font-weight: 500;
   transition: all 0.2s;
   border: none;
   cursor: pointer;
 }
 
-.filters-section button:hover {
+.filters-section .filters-clear-button:hover {
   background: #d1d5db;
 }
 
 .stats-grid-large {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
 .stat-card-large {
   background: white;
   border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
   transition: transform 0.2s, box-shadow 0.2s;
-  border-left: 4px solid;
 }
 
 .stat-card-large:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
-}
-
-.stat-green {
-  border-color: #10b981;
-}
-
-.stat-blue {
-  border-color: #3b82f6;
-}
-
-.stat-purple {
-  border-color: #8b5cf6;
-}
-
-.stat-red {
-  border-color: #ef4444;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .stat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
@@ -661,6 +789,8 @@ onMounted(() => {
   font-size: 0.875rem;
   color: #6b7280;
   font-weight: 500;
+  min-width: 0;
+  line-height: 1.25;
 }
 
 .stat-icon-large {
@@ -715,6 +845,138 @@ onMounted(() => {
   margin-bottom: 1.5rem;
 }
 
+.informes-clients-hours-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: stretch;
+}
+
+.informes-half-section {
+  min-width: 0;
+}
+
+.informes-half-section.info-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.informes-half-section .clients-list-fill {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.client-mini-card {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #ecfeff 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.client-mini-card-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.client-mini-rank {
+  font-size: 1.125rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #2563eb;
+  flex-shrink: 0;
+  width: 1.75rem;
+  text-align: right;
+}
+
+.client-mini-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.client-mini-name {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.3;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.client-mini-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.hours-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hours-bar-row {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hours-bar-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  font-variant-numeric: tabular-nums;
+}
+
+.hours-bar-track {
+  height: 1.35rem;
+  background: #f1f5f9;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.hours-bar-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 0.375rem;
+  min-width: 2px;
+  transition: width 0.35s ease;
+}
+
+.hours-bar-count {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #334155;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1024px) {
+  .informes-clients-hours-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .hours-bar-row {
+    grid-template-columns: 3rem minmax(0, 1fr) 1.75rem;
+  }
+}
+
 .info-card {
   background: white;
   border-radius: 1rem;
@@ -727,6 +989,12 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.informes-half-section .card-title {
+  min-width: 0;
 }
 
 .card-title {
@@ -872,11 +1140,17 @@ onMounted(() => {
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+  .stats-grid-large {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .grid-two-cols {
     grid-template-columns: 1fr;
   }
-  
+
   .stats-grid-large {
     grid-template-columns: 1fr;
   }

@@ -1,18 +1,17 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 
-// Obtener estadísticas del dashboard
+/** Estadísticas del dashboard: pocas queries y datos derivados en memoria local. */
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
 
-    // Obtener el salón del usuario
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         salon: true,
-        worksAt: true
-      }
+        worksAt: true,
+      },
     });
 
     if (!user) {
@@ -35,173 +34,136 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Cita actual y próxima
-    const currentAndNext = await prisma.appointment.findMany({
-      where: {
-        service: { salonId },
-        startTime: { gte: todayStart },
-        status: { in: ['PENDING', 'CONFIRMED'] }
-      },
-      include: {
-        client: true,
-        service: true,
-        stylist: true
-      },
-      orderBy: { startTime: 'asc' },
-      take: 2
-    });
+    const chartRangeStart = new Date(todayStart);
+    chartRangeStart.setDate(chartRangeStart.getDate() - 6);
 
-    const currentAppointment = currentAndNext.find(apt => {
-      const aptStart = new Date(apt.startTime);
-      const aptEnd = new Date(apt.endTime);
-      return now >= aptStart && now <= aptEnd;
-    }) || null;
+    const salonApptWhere = { service: { salonId } };
 
-    const nextAppointment = currentAndNext.find(apt => 
-      new Date(apt.startTime) > now
-    ) || null;
-
-    // Citas de hoy
-    const todayAppointments = await prisma.appointment.findMany({
-      where: {
-        service: { salonId },
-        startTime: { gte: todayStart, lt: todayEnd }
-      }
-    });
-
-    const todayCompleted = todayAppointments.filter(a => a.status === 'COMPLETED').length;
-    const todayCancelled = todayAppointments.filter(a => a.status === 'CANCELLED').length;
-    const todayPending = todayAppointments.filter(a => a.status === 'PENDING' || a.status === 'CONFIRMED').length;
-
-    // Ingresos de hoy
-    const todayRevenue = await prisma.appointment.findMany({
-      where: {
-        service: { salonId },
-        startTime: { gte: todayStart, lt: todayEnd },
-        status: 'COMPLETED'
-      },
-      include: { service: true }
-    });
-
-    const revenueToday = todayRevenue.reduce((sum, apt) => sum + apt.service.price, 0);
-
-    // Ingresos del mes
-    const monthRevenue = await prisma.appointment.findMany({
-      where: {
-        service: { salonId },
-        startTime: { gte: monthStart },
-        status: 'COMPLETED'
-      },
-      include: { service: true }
-    });
-
-    const revenueMonth = monthRevenue.reduce((sum, apt) => sum + apt.service.price, 0);
-
-    // Nuevos clientes
-    const clientsToday = await prisma.client.findMany({
-      where: {
-        salonId,
-        appointments: {
-          some: {
-            startTime: { gte: todayStart, lt: todayEnd }
-          }
-        }
-      },
-      include: {
-        appointments: {
-          orderBy: { startTime: 'asc' },
-          take: 1
-        }
-      }
-    });
-
-    const newClientsToday = clientsToday.filter(client => {
-      const firstAppointment = client.appointments[0];
-      return firstAppointment && new Date(firstAppointment.startTime) >= todayStart;
-    }).length;
-
-    const clientsWeek = await prisma.client.findMany({
-      where: {
-        salonId,
-        appointments: {
-          some: {
-            startTime: { gte: weekStart }
-          }
-        }
-      },
-      include: {
-        appointments: {
-          orderBy: { startTime: 'asc' },
-          take: 1
-        }
-      }
-    });
-
-    const newClientsWeek = clientsWeek.filter(client => {
-      const firstAppointment = client.appointments[0];
-      return firstAppointment && new Date(firstAppointment.startTime) >= weekStart;
-    }).length;
-
-    const clientsMonth = await prisma.client.findMany({
-      where: {
-        salonId,
-        appointments: {
-          some: {
-            startTime: { gte: monthStart }
-          }
-        }
-      },
-      include: {
-        appointments: {
-          orderBy: { startTime: 'asc' },
-          take: 1
-        }
-      }
-    });
-
-    const newClientsMonth = clientsMonth.filter(client => {
-      const firstAppointment = client.appointments[0];
-      return firstAppointment && new Date(firstAppointment.startTime) >= monthStart;
-    }).length;
-
-    // Ingresos por día de los últimos 7 días (para gráfico)
-    const last7Days = [];
-    for (let i = 6; i >= 0; i--) {
-      const dayStart = new Date(todayStart);
-      dayStart.setDate(dayStart.getDate() - i);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
-
-      const dayRevenue = await prisma.appointment.findMany({
+    const [
+      currentAndNext,
+      todayApps,
+      monthCompleted,
+      chartCompleted,
+      clientsToday,
+      clientsWeek,
+      clientsMonth,
+    ] = await Promise.all([
+      prisma.appointment.findMany({
         where: {
-          service: { salonId },
-          startTime: { gte: dayStart, lt: dayEnd },
-          status: 'COMPLETED'
+          ...salonApptWhere,
+          startTime: { gte: todayStart },
+          status: { in: ['PENDING', 'CONFIRMED'] },
         },
-        include: { service: true }
-      });
+        include: {
+          client: true,
+          service: true,
+          stylist: true,
+        },
+        orderBy: { startTime: 'asc' },
+        take: 2,
+      }),
+      prisma.appointment.findMany({
+        where: {
+          ...salonApptWhere,
+          startTime: { gte: todayStart, lt: todayEnd },
+        },
+        include: { service: true },
+      }),
+      prisma.appointment.findMany({
+        where: {
+          ...salonApptWhere,
+          startTime: { gte: monthStart },
+          status: 'COMPLETED',
+        },
+        include: { service: true },
+      }),
+      prisma.appointment.findMany({
+        where: {
+          ...salonApptWhere,
+          startTime: { gte: chartRangeStart, lt: todayEnd },
+          status: 'COMPLETED',
+        },
+        select: {
+          startTime: true,
+          service: { select: { price: true, name: true } },
+        },
+      }),
+      prisma.client.findMany({
+        where: {
+          salonId,
+          appointments: {
+            some: {
+              startTime: { gte: todayStart, lt: todayEnd },
+            },
+          },
+        },
+        include: {
+          appointments: {
+            orderBy: { startTime: 'asc' },
+            take: 1,
+          },
+        },
+      }),
+      prisma.client.findMany({
+        where: {
+          salonId,
+          appointments: {
+            some: {
+              startTime: { gte: weekStart },
+            },
+          },
+        },
+        include: {
+          appointments: {
+            orderBy: { startTime: 'asc' },
+            take: 1,
+          },
+        },
+      }),
+      prisma.client.findMany({
+        where: {
+          salonId,
+          appointments: {
+            some: {
+              startTime: { gte: monthStart },
+            },
+          },
+        },
+        include: {
+          appointments: {
+            orderBy: { startTime: 'asc' },
+            take: 1,
+          },
+        },
+      }),
+    ]);
 
-      const revenue = dayRevenue.reduce((sum, apt) => sum + apt.service.price, 0);
+    const currentAppointment =
+      currentAndNext.find((apt) => {
+        const aptStart = new Date(apt.startTime);
+        const aptEnd = new Date(apt.endTime);
+        return now >= aptStart && now <= aptEnd;
+      }) || null;
 
-      last7Days.push({
-        date: dayStart.toISOString().split('T')[0],
-        revenue,
-        appointments: dayRevenue.length
-      });
-    }
+    const nextAppointment =
+      currentAndNext.find((apt) => new Date(apt.startTime) > now) || null;
 
-    // Servicios más populares del mes
-    const monthAppointments = await prisma.appointment.findMany({
-      where: {
-        service: { salonId },
-        startTime: { gte: monthStart },
-        status: 'COMPLETED'
-      },
-      include: { service: true }
-    });
+    const todayCompleted = todayApps.filter((a) => a.status === 'COMPLETED').length;
+    const todayCancelled = todayApps.filter((a) => a.status === 'CANCELLED').length;
+    const todayPending = todayApps.filter(
+      (a) => a.status === 'PENDING' || a.status === 'CONFIRMED',
+    ).length;
 
-    const serviceCount: { [key: string]: { name: string; count: number; revenue: number } } = {};
-    monthAppointments.forEach(apt => {
+    const revenueToday = todayApps
+      .filter((a) => a.status === 'COMPLETED')
+      .reduce((sum, apt) => sum + apt.service.price, 0);
+
+    const revenueMonth = monthCompleted.reduce((sum, apt) => sum + apt.service.price, 0);
+
+    const serviceCount: {
+      [key: string]: { name: string; count: number; revenue: number };
+    } = {};
+    monthCompleted.forEach((apt) => {
       const serviceName = apt.service.name;
       if (!serviceCount[serviceName]) {
         serviceCount[serviceName] = { name: serviceName, count: 0, revenue: 0 };
@@ -214,28 +176,68 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
+    const last7Days: { date: string; revenue: number; appointments: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = new Date(todayStart);
+      dayStart.setDate(dayStart.getDate() - i);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+      const d0 = dayStart.getTime();
+      const d1 = dayEnd.getTime();
+
+      let revenue = 0;
+      let count = 0;
+      for (const apt of chartCompleted) {
+        const t = new Date(apt.startTime).getTime();
+        if (t >= d0 && t < d1) {
+          revenue += apt.service.price;
+          count++;
+        }
+      }
+      last7Days.push({
+        date: dayStart.toISOString().split('T')[0],
+        revenue,
+        appointments: count,
+      });
+    }
+
+    const newClientsToday = clientsToday.filter((client) => {
+      const firstAppointment = client.appointments[0];
+      return firstAppointment && new Date(firstAppointment.startTime) >= todayStart;
+    }).length;
+
+    const newClientsWeek = clientsWeek.filter((client) => {
+      const firstAppointment = client.appointments[0];
+      return firstAppointment && new Date(firstAppointment.startTime) >= weekStart;
+    }).length;
+
+    const newClientsMonth = clientsMonth.filter((client) => {
+      const firstAppointment = client.appointments[0];
+      return firstAppointment && new Date(firstAppointment.startTime) >= monthStart;
+    }).length;
+
     res.json({
       currentAppointment,
       nextAppointment,
       today: {
-        appointments: todayAppointments.length,
+        appointments: todayApps.length,
         completed: todayCompleted,
         cancelled: todayCancelled,
         pending: todayPending,
         revenue: revenueToday,
-        newClients: newClientsToday
+        newClients: newClientsToday,
       },
       week: {
-        newClients: newClientsWeek
+        newClients: newClientsWeek,
       },
       month: {
         revenue: revenueMonth,
-        newClients: newClientsMonth
+        newClients: newClientsMonth,
       },
       charts: {
         last7Days,
-        topServices
-      }
+        topServices,
+      },
     });
   } catch (error) {
     console.error('❌ Error obteniendo estadísticas:', error);
@@ -243,7 +245,6 @@ export const getDashboardStats = async (req: Request, res: Response) => {
   }
 };
 
-// Actualizar estado de una cita
 export const updateAppointmentStatus = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
@@ -254,13 +255,12 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Estado inválido' });
     }
 
-    // Verificar que la cita pertenece al salón del usuario
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         salon: true,
-        worksAt: true
-      }
+        worksAt: true,
+      },
     });
 
     if (!user) {
@@ -276,23 +276,22 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     const appointment = await prisma.appointment.findFirst({
       where: {
         id: appointmentId,
-        service: { salonId }
-      }
+        service: { salonId },
+      },
     });
 
     if (!appointment) {
       return res.status(404).json({ error: 'Cita no encontrada' });
     }
 
-    // Actualizar el estado
     const updatedAppointment = await prisma.appointment.update({
       where: { id: appointmentId },
       data: { status },
       include: {
         client: true,
         service: true,
-        stylist: true
-      }
+        stylist: true,
+      },
     });
 
     res.json(updatedAppointment);

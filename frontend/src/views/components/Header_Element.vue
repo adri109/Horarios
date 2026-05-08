@@ -378,16 +378,14 @@ onBeforeUnmount(() => {
               </div>
 
               <div class="border-t border-gray-100 py-2">
-                <BaseButton
+                <button
+                  type="button"
                   @click="logout"
-                  variant="danger"
-                  size="sm"
-                  full-width
-                  class="justify-start text-left"
+                  class="flex w-full items-center px-4 py-2 text-left text-sm font-medium text-[#5b61d9] transition-colors duration-150 hover:text-[#583d8a]"
                 >
-                  <i data-lucide="log-out" class="w-4 h-4 mr-3"></i>
-                  Cerrar Sesión
-                </BaseButton>
+                  <i data-lucide="log-out" class="mr-3 h-4 w-4 shrink-0"></i>
+                  Cerrar sesión
+                </button>
               </div>
             </div>
           </div>
