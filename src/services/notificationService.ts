@@ -1,16 +1,7 @@
-import nodemailer from 'nodemailer';
 import { io } from '../index';
+import { createSmtpTransport } from '../utils/smtpTransport';
 
-// Configuración del transportador de email
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587', 10),
-  secure: false, // true para 465, false para otros puertos
-  auth: {
-    user: process.env.SMTP_USER || 'tu-email@gmail.com',
-    pass: process.env.SMTP_PASS || 'tu-contraseña',
-  },
-});
+const transporter = createSmtpTransport();
 
 interface AppointmentEmailData {
   clientName: string;

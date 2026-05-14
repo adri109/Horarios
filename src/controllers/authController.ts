@@ -3,17 +3,11 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import slugify from 'slugify';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
 import prisma from '../utils/prisma';
+import logger from '../utils/logger';
+import { createSmtpTransport, smtpFrom } from '../utils/smtpTransport';
 
-// Configurar transporte de email
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const transporter = createSmtpTransport();
 
 // ==========================
 // CHECK EMAIL (registro, sin persistir)
@@ -232,8 +226,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // 4️⃣ Enviar email con enlace de restablecimiento
     const resetUrl = `http://localhost:8080/reset-password?token=${resetToken}`;
     
-    await transporter.sendMail({
-      from: `"Horarios" <${process.env.SMTP_USER}>`,
+    const info = await transporter.sendMail({
+      from: smtpFrom(),
       to: email,
       subject: 'Restablecer tu contraseña',
       html: `
@@ -251,9 +245,30 @@ export const forgotPassword = async (req: Request, res: Response) => {
       `,
     });
 
+    logger.info(
+      { messageId: info.messageId, to: email },
+      'Correo de restablecimiento aceptado por SMTP'
+    );
+
     res.json({ message: 'Si el email existe, recibirás un correo de restablecimiento' });
-  } catch (error: any) {
-    console.error('💥 Error al solicitar restablecimiento:', error);
+  } catch (error: unknown) {
+    const e = error as {
+      code?: string;
+      responseCode?: number;
+      response?: string;
+      message?: string;
+    };
+    logger.error(
+      {
+        smtpHost: process.env.SMTP_HOST,
+        smtpPort: process.env.SMTP_PORT,
+        smtpUser: process.env.SMTP_USER?.trim(),
+        smtpErrCode: e.code,
+        smtpErrResponseCode: e.responseCode,
+        smtpErrResponse: e.response ?? e.message,
+      },
+      'Error SMTP al solicitar restablecimiento (535 EAUTH = credenciales incorrectas o SMTP no permitido en tu plan/cuenta Zoho)'
+    );
     res.status(500).json({ error: 'Error al procesar la solicitud' });
   }
 };
