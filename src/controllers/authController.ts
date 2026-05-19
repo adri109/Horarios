@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import slugify from 'slugify';
 import crypto from 'crypto';
 import prisma from '../utils/prisma';
@@ -8,6 +8,9 @@ import logger from '../utils/logger';
 import { createSmtpTransport, smtpFrom } from '../utils/smtpTransport';
 
 const transporter = createSmtpTransport();
+
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN?.trim() ||
+  '12h') as SignOptions['expiresIn'];
 
 // ==========================
 // CHECK EMAIL (registro, sin persistir)
@@ -94,7 +97,7 @@ export const register = async (req: Request, res: Response) => {
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       jwtSecret,
-      { expiresIn: '1h' }
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
     // 7️⃣ Devolver respuesta con usuario + salón
@@ -155,7 +158,7 @@ export const login = async (req: Request, res: Response) => {
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       jwtSecret,
-      { expiresIn: '1h' }
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
     // 4️⃣ Devolver datos de usuario + token + permisos

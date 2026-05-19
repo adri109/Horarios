@@ -7,9 +7,20 @@
     >
       <div class="max-w-6xl mx-auto px-4">
         <div class="flex justify-between items-center">
-          <div>
-            <h1 class="text-4xl md:text-5xl font-bold mb-2">{{ BRAND.appName }}</h1>
-            <p class="text-purple-100">Reserva tu cita online</p>
+          <div class="flex min-w-0 items-center gap-3 sm:gap-4">
+            <router-link
+              to="/"
+              class="shrink-0 transition-opacity hover:opacity-90"
+              :aria-label="`${BRAND.appName} — inicio`"
+            >
+              <BrandLogo variant="fullWhite" size="md" />
+            </router-link>
+            <div class="min-w-0">
+              <h1 class="truncate text-xl font-bold sm:text-2xl md:text-3xl mb-1">
+                {{ salon?.name ?? BRAND.appName }}
+              </h1>
+              <p class="text-sm text-purple-100 sm:text-base">Reserva tu cita online</p>
+            </div>
           </div>
           <!-- Botón de acceso al dashboard si está autenticado -->
           <router-link
@@ -671,6 +682,7 @@ import { useRoute } from 'vue-router';
 import axios from '@/utils/axios';
 import CustomCalendar from '@/components/CustomCalendar.vue';
 import { BRAND } from '@/config/branding';
+import BrandLogo from '@/components/BrandLogo.vue';
 import { alertDialog } from '@/composables/useDialog';
 
 const route = useRoute();

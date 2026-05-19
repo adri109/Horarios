@@ -54,7 +54,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
             </svg>
           </div>
-          <div>
+          <div class="stat-card-body">
             <p class="stat-value">{{ stats.total }}</p>
             <p class="stat-label">Total Citas</p>
           </div>
@@ -65,7 +65,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <div>
+          <div class="stat-card-body">
             <p class="stat-value">{{ stats.completadas }}</p>
             <p class="stat-label">Completadas</p>
           </div>
@@ -76,7 +76,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <div>
+          <div class="stat-card-body">
             <p class="stat-value">{{ stats.pendientes }}</p>
             <p class="stat-label">Pendientes</p>
           </div>
@@ -87,7 +87,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <div>
+          <div class="stat-card-body">
             <p class="stat-value">{{ stats.canceladas }}</p>
             <p class="stat-label">Canceladas</p>
           </div>
@@ -791,9 +791,11 @@ onBeforeUnmount(() => {
   margin: 0.5rem 0 0 0;
 }
 
-/* Estadísticas */
+/* Estadísticas: el layout en fila depende del ancho REAL del contenido (sidebar abierto/cerrado) */
 .stats-section {
   margin-bottom: 2rem;
+  container-type: inline-size;
+  container-name: citas-stats;
 }
 
 .stats-header {
@@ -845,19 +847,50 @@ onBeforeUnmount(() => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  /* Por defecto 2×2 (hueco estrecho o escritorio con sidebar): mismo modelo que móvil */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
 }
 
+/* Solo cuando la zona de estadísticas tiene suficiente ancho → una fila de 4 */
+@container citas-stats (min-width: 920px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Sin container queries (navegadores antiguos): fila única solo en pantallas muy anchas */
+@supports not (container-type: inline-size) {
+  @media (min-width: 1320px) {
+    .stats-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+}
+
+/*
+ * Tarjeta en rejilla: icono ocupa 2 filas de alto | fila1 = número, fila2 = etiqueta
+ *   ICONO | 12
+ *   ICONO | Completadas
+ */
 .stat-card {
   background: white;
-  padding: 1.5rem;
+  padding: clamp(0.75rem, 2.5vw, 1.25rem);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: clamp(0.65rem, 1.8vw, 1rem);
+  row-gap: 0.125rem;
   align-items: center;
-  gap: 1rem;
   transition: transform 0.2s;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stat-card-body {
+  display: contents;
 }
 
 .stat-card:hover {
@@ -866,8 +899,12 @@ onBeforeUnmount(() => {
 }
 
 .stat-icon {
-  width: 3rem;
-  height: 3rem;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: center;
+  justify-self: center;
+  width: clamp(2.5rem, 7vw, 3.25rem);
+  height: clamp(2.5rem, 7vw, 3.25rem);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -877,22 +914,67 @@ onBeforeUnmount(() => {
 }
 
 .stat-icon svg {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: clamp(1.35rem, 4.5vw, 1.85rem);
+  height: clamp(1.35rem, 4.5vw, 1.85rem);
   color: white;
+  flex-shrink: 0;
 }
 
 .stat-value {
-  font-size: 1.75rem;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  min-width: 0;
+  font-size: clamp(1.125rem, 3.5vw, 1.75rem);
   font-weight: 700;
   color: #1e293b;
   margin: 0;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .stat-label {
-  font-size: 0.875rem;
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  min-width: 0;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   color: #64748b;
-  margin: 0.25rem 0 0 0;
+  margin: 0;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+@supports (width: 1cqw) {
+  .stat-card {
+    padding: clamp(0.75rem, 3cqw, 1.25rem);
+    column-gap: clamp(0.65rem, 2.5cqw, 1rem);
+  }
+
+  .stat-icon {
+    width: clamp(2.5rem, 11cqw, 3.35rem);
+    height: clamp(2.5rem, 11cqw, 3.35rem);
+  }
+
+  .stat-icon svg {
+    width: clamp(1.35rem, 6.5cqw, 1.85rem);
+    height: clamp(1.35rem, 6.5cqw, 1.85rem);
+  }
+
+  .stat-value {
+    font-size: clamp(1rem, 4.5cqw + 0.35rem, 1.625rem);
+  }
+
+  .stat-label {
+    font-size: clamp(0.6875rem, 2.75cqw + 0.35rem, 0.875rem);
+  }
 }
 
 /* Filtros */
@@ -1374,6 +1456,24 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   .citas-container {
     padding: 1rem;
+  }
+
+  .stats-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .period-selector {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .period-btn {
+    flex: 1 1 auto;
+    min-width: 4.25rem;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+    font-size: 0.8125rem;
   }
   
   .filters-container {

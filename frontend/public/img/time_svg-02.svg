@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1343.11 550.08">
+  <!-- Generator: Adobe Illustrator 29.8.4, SVG Export Plug-In . SVG Version: 2.1.1 Build 6)  -->
+  <defs>
+    <style>
+      .st0 {
+        isolation: isolate;
+      }
+
+      .st1 {
+        fill: url(#Degradado_sin_nombre_2);
+      }
+
+      .st1, .st2 {
+        fill-rule: evenodd;
+      }
+
+      .st3 {
+        fill: url(#Degradado_sin_nombre);
+      }
+
+      .st2 {
+        fill: url(#Degradado_sin_nombre_3);
+      }
+    </style>
+    <linearGradient id="Degradado_sin_nombre" data-name="Degradado sin nombre" x1="125.59" y1="579.85" x2="386.97" y2="312.89" gradientTransform="translate(0 550) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#aa45db"/>
+      <stop offset="1" stop-color="#4270ed"/>
+    </linearGradient>
+    <linearGradient id="Degradado_sin_nombre_2" data-name="Degradado sin nombre 2" x1="-27.37" y1="445.35" x2="244.49" y2="167.69" gradientTransform="translate(0 550) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#aa45db"/>
+      <stop offset="1" stop-color="#4270ed"/>
+    </linearGradient>
+    <linearGradient id="Degradado_sin_nombre_3" data-name="Degradado sin nombre 3" x1="39.21" y1="496.12" x2="301.71" y2="228.02" gradientTransform="translate(0 550) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#aa45db"/>
+      <stop offset="1" stop-color="#4270ed"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <circle class="st3" cx="303.43" cy="151.79" r="44.33"/>
+    <path class="st1" d="M231.13,217.28h-43.32c-21.49,0-38.91,17.42-38.91,38.91v180.01c0,3.55,2.87,6.42,6.42,6.42h11.62c39,0,70.61-31.62,70.61-70.61v-148.31c0-3.55-2.87-6.42-6.42-6.42h0Z"/>
+    <path class="st2" d="M50.97,113.88v43.32c0,21.49,17.42,38.91,38.91,38.91h141.25c3.55,0,6.42-2.87,6.42-6.42v-11.62c0-39-31.62-70.61-70.61-70.61H57.39c-3.55,0-6.42,2.87-6.42,6.42Z"/>
+  </g>
+  <g class="st0">
+    <g class="st0">
+      <path d="M554.35,191.28v34.57h-46.93v142.56h-43.14v-142.56h-46.93v-34.57h137Z"/>
+      <path d="M631.81,191.28v177.12h-43.14v-177.12h43.14Z"/>
+      <path d="M876.29,191.28v177.12h-43.14v-106.22l-39.61,106.22h-34.82l-39.87-106.48v106.48h-43.14v-177.12h50.97l49.71,122.62,49.2-122.62h50.71Z"/>
+      <path d="M963.09,225.84v35.83h57.78v33.3h-57.78v38.86h65.35v34.57h-108.49v-177.12h108.49v34.57h-65.35Z"/>
+      <path d="M1112.2,191.28v177.12h-43.14v-177.12h43.14Z"/>
+      <path d="M1283.52,191.28v34.57h-46.93v142.56h-43.14v-142.56h-46.93v-34.57h137Z"/>
+    </g>
+  </g>
+</svg>

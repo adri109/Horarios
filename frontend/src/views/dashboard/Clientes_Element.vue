@@ -15,13 +15,24 @@ const showClientDetail = ref(false);
 
 // Estadísticas generales
 const stats = computed(() => {
-  if (clients.value.length === 0) return { total: 0, totalRevenue: 0, avgPerClient: 0 };
-  
+  if (clients.value.length === 0) {
+    return {
+      total: 0,
+      totalRevenue: 0,
+      avgPerClient: 0,
+      totalCompletedAppointments: 0,
+    };
+  }
+
   const total = clients.value.length;
   const totalRevenue = clients.value.reduce((sum, c) => sum + c.totalSpent, 0);
   const avgPerClient = total > 0 ? totalRevenue / total : 0;
-  
-  return { total, totalRevenue, avgPerClient };
+  const totalCompletedAppointments = clients.value.reduce(
+    (sum, c) => sum + (c.completedAppointments ?? 0),
+    0
+  );
+
+  return { total, totalRevenue, avgPerClient, totalCompletedAppointments };
 });
 
 // Clientes filtrados y ordenados
@@ -66,7 +77,7 @@ const fetchClients = async () => {
     
     console.log('📤 Solicitando clientes...');
     const response = await axios.get('/clients');
-    
+
     console.log('✅ Clientes recibidos:', response.data);
     clients.value = response.data;
   } catch (error) {
@@ -129,7 +140,7 @@ onMounted(() => {
     <div class="header">
       <div>
         <h1 class="title flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-8 h-8 title-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-8 h-8 shrink-0 title-icon" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
           </svg>
           Clientes
@@ -171,6 +182,17 @@ onMounted(() => {
         <div>
           <p class="stat-value">{{ formatPrice(stats.avgPerClient) }}</p>
           <p class="stat-label">Media por Cliente</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <p class="stat-value">{{ stats.totalCompletedAppointments.toLocaleString('es-ES') }}</p>
+          <p class="stat-label">Citas completadas</p>
         </div>
       </div>
     </div>
@@ -219,57 +241,102 @@ onMounted(() => {
       <p>Cargando clientes...</p>
     </div>
 
-    <!-- Tabla de clientes -->
-    <div v-else-if="filteredClients.length > 0" class="table-container">
-      <table class="clients-table">
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Teléfono</th>
-            <th>Citas</th>
-            <th>Última Visita</th>
-            <th>Último Servicio</th>
-            <th>Total Gastado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="client in filteredClients" :key="client.id" class="client-row">
-            <td class="client-name">
-              <div class="name-circle">{{ client.name.charAt(0).toUpperCase() }}</div>
-              <span>{{ client.name }}</span>
-            </td>
-            <td>{{ client.phone || 'Sin teléfono' }}</td>
-            <td>
-              <div class="appointments-badge">
-                <span class="badge completed">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                  {{ client.completedAppointments }}
-                </span>
-                <span v-if="client.cancelledAppointments > 0" class="badge cancelled">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  {{ client.cancelledAppointments }}
-                </span>
-              </div>
-            </td>
-            <td>{{ formatDate(client.lastAppointmentDate) }}</td>
-            <td>
-              <span class="service-name">{{ client.lastService || '-' }}</span>
-            </td>
-            <td class="amount">{{ formatPrice(client.totalSpent) }}</td>
-            <td>
-              <button @click="viewClientDetail(client)" class="btn-view">
-                Ver detalles
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Tabla (escritorio) + tarjetas (móvil / pantalla estrecha) -->
+    <template v-else-if="filteredClients.length > 0">
+      <div class="table-container clients-table-wrap">
+        <table class="clients-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Teléfono</th>
+              <th>Citas</th>
+              <th>Última Visita</th>
+              <th>Último Servicio</th>
+              <th>Total Gastado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="client in filteredClients" :key="client.id" class="client-row">
+              <td class="client-name">
+                <div class="name-circle">{{ client.name.charAt(0).toUpperCase() }}</div>
+                <span class="client-name-text">{{ client.name }}</span>
+              </td>
+              <td>{{ client.phone || 'Sin teléfono' }}</td>
+              <td>
+                <div class="appointments-badge">
+                  <span class="badge completed">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    {{ client.completedAppointments }}
+                  </span>
+                  <span v-if="client.cancelledAppointments > 0" class="badge cancelled">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    {{ client.cancelledAppointments }}
+                  </span>
+                </div>
+              </td>
+              <td>{{ formatDate(client.lastAppointmentDate) }}</td>
+              <td>
+                <span class="service-name">{{ client.lastService || '-' }}</span>
+              </td>
+              <td class="amount">{{ formatPrice(client.totalSpent) }}</td>
+              <td>
+                <button type="button" @click="viewClientDetail(client)" class="btn-view">
+                  Ver detalles
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ul class="clients-mobile-cards" aria-label="Lista de clientes">
+        <li v-for="client in filteredClients" :key="`m-${client.id}`" class="client-card-mobile">
+          <div class="client-card-mobile-top">
+            <div class="name-circle" aria-hidden="true">{{ client.name.charAt(0).toUpperCase() }}</div>
+            <div class="client-card-mobile-main">
+              <p class="client-card-mobile-name">{{ client.name }}</p>
+              <p class="client-card-mobile-phone">{{ client.phone || 'Sin teléfono' }}</p>
+            </div>
+            <button type="button" @click="viewClientDetail(client)" class="btn-view btn-view-compact">
+              Ver
+            </button>
+          </div>
+          <div class="client-card-mobile-badges">
+            <span class="badge completed">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              {{ client.completedAppointments }} citas
+            </span>
+            <span v-if="client.cancelledAppointments > 0" class="badge cancelled">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              {{ client.cancelledAppointments }} cancel.
+            </span>
+          </div>
+          <dl class="client-card-mobile-dl">
+            <div>
+              <dt>Última visita</dt>
+              <dd>{{ formatDate(client.lastAppointmentDate) }}</dd>
+            </div>
+            <div>
+              <dt>Último servicio</dt>
+              <dd class="service-name">{{ client.lastService || '—' }}</dd>
+            </div>
+            <div class="client-card-mobile-total">
+              <dt>Total</dt>
+              <dd class="amount">{{ formatPrice(client.totalSpent) }}</dd>
+            </div>
+          </dl>
+        </li>
+      </ul>
+    </template>
 
     <!-- Sin resultados -->
     <div v-else class="empty-state">
@@ -336,6 +403,10 @@ onMounted(() => {
   max-width: 1400px;
   margin: 0 auto;
   min-height: calc(100vh - 8rem);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .header {
@@ -357,6 +428,9 @@ onMounted(() => {
 
 .title-icon {
   color: #667eea;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
 }
 
 .subtitle {
@@ -367,7 +441,7 @@ onMounted(() => {
 /* Estadísticas */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -428,7 +502,7 @@ onMounted(() => {
 
 .search-box {
   flex: 1;
-  min-width: 300px;
+  min-width: min(100%, 300px);
   position: relative;
 }
 
@@ -468,6 +542,7 @@ onMounted(() => {
 .sort-buttons {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .sort-btn {
@@ -514,7 +589,14 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* Tabla */
+/* Tabla (solo escritorio; en móvil se usan tarjetas) */
+.clients-mobile-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .table-container {
   background: white;
   border-radius: 12px;
@@ -560,11 +642,21 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   font-weight: 600;
+  min-width: 0;
+}
+
+.client-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .name-circle {
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   border-radius: 50%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -573,6 +665,8 @@ onMounted(() => {
   justify-content: center;
   font-weight: 700;
   font-size: 1.125rem;
+  flex-shrink: 0;
+  aspect-ratio: 1;
 }
 
 .appointments-badge {
@@ -593,6 +687,7 @@ onMounted(() => {
 .badge-icon {
   width: 0.875rem;
   height: 0.875rem;
+  flex-shrink: 0;
 }
 
 .badge.completed {
@@ -776,27 +871,128 @@ onMounted(() => {
   letter-spacing: 0.5px;
 }
 
+.btn-view-compact {
+  padding: 0.5rem 0.75rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.client-card-mobile {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.client-card-mobile-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.client-card-mobile-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.client-card-mobile-name {
+  margin: 0;
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 1rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-card-mobile-phone {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.875rem;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-card-mobile-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.client-card-mobile-dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+  margin: 0.875rem 0 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.client-card-mobile-dl dt {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.client-card-mobile-dl dd {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.8125rem;
+  color: #1e293b;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.client-card-mobile-total {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.client-card-mobile-total dt {
+  font-size: 0.75rem;
+}
+
+.client-card-mobile-total dd {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1024px) {
+  .clients-table-wrap {
+    display: none;
+  }
+
+  .clients-mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
 @media (max-width: 768px) {
   .clientes-container {
     padding: 1rem;
   }
-  
+
   .filters-container {
     flex-direction: column;
   }
-  
+
   .search-box {
     min-width: 100%;
   }
-  
-  .table-container {
-    overflow-x: auto;
-  }
-  
-  .clients-table {
-    min-width: 800px;
-  }
-  
+
   .stats-row {
     grid-template-columns: 1fr;
   }

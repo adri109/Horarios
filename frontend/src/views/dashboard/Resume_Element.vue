@@ -888,6 +888,22 @@ onBeforeUnmount(() => {
   .dashboard-container {
     padding: 1rem;
   }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .current-time {
+    text-align: left;
+    width: 100%;
+  }
+
+  .title {
+    font-size: 1.35rem;
+  }
   
   .appointment-body {
     flex-direction: column;

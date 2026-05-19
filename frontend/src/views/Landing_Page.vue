@@ -11,34 +11,15 @@
     >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16 md:h-20">
-          <router-link to="/" class="flex items-center gap-3 group">
-            <div
-              :class="[
-                'w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-105',
-                scrolled
-                  ? 'bg-gradient-to-br from-purple-600 to-blue-600 text-white shadow-purple-500/30'
-                  : 'bg-white text-purple-600 shadow-purple-900/20',
-              ]"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.8"
-                stroke="currentColor"
-                class="w-6 h-6"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-              </svg>
-            </div>
-            <span
-              :class="[
-                'text-xl font-bold tracking-tight transition-colors',
-                scrolled ? 'text-gray-900' : 'text-white',
-              ]"
-            >
-              {{ brand.appName }}
-            </span>
+          <router-link
+            to="/"
+            class="flex items-center shrink-0 transition-transform duration-300 group-hover:scale-[1.02]"
+            aria-label="TimeIt — inicio"
+          >
+            <BrandLogo
+              :variant="scrolled ? 'fullOnLight' : 'fullWhite'"
+              size="lg"
+            />
           </router-link>
 
           <nav class="hidden md:flex items-center gap-8">
@@ -183,7 +164,7 @@
             <div class="grid grid-cols-12 gap-0 bg-gray-50">
               <!-- Sidebar -->
               <div class="hidden md:flex md:col-span-3 lg:col-span-2 flex-col gap-1.5 p-4 bg-gradient-to-b from-purple-700 to-indigo-700 text-white text-xs">
-                <div class="font-bold text-sm mb-3">{{ brand.appName }}</div>
+                <BrandLogo variant="iconWhite" size="sm" class="mb-3" />
                 <div class="px-2 py-1.5 rounded-md bg-white/15">Panel</div>
                 <div class="px-2 py-1.5 rounded-md hover:bg-white/10">Citas</div>
                 <div class="px-2 py-1.5 rounded-md hover:bg-white/10">Clientes</div>
@@ -683,21 +664,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid md:grid-cols-4 gap-10 mb-12">
           <div class="md:col-span-1">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-900/40">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.8"
-                  stroke="currentColor"
-                  class="w-6 h-6 text-white"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                </svg>
-              </div>
-              <span class="text-xl font-bold text-white">{{ brand.appName }}</span>
-            </div>
+            <BrandLogo variant="fullOnDark" size="lg" class="mb-4" />
             <p class="text-sm text-gray-400 leading-relaxed">
               {{ brand.tagline }}
             </p>
@@ -761,6 +728,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, h } from 'vue';
+import BrandLogo from '@/components/BrandLogo.vue';
 import { BRAND } from '@/config/branding';
 
 const brand = BRAND;

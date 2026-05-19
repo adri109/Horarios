@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col lg:flex-row">
+  <div class="register-page flex flex-col lg:flex-row">
     <!-- Panel izquierdo -->
     <div
       class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 relative overflow-hidden"
@@ -7,18 +7,18 @@
       <div class="absolute top-24 left-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
       <div class="absolute bottom-24 right-10 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl" />
 
-      <div class="relative z-10 flex flex-col justify-center text-white px-12 py-16 xl:px-16 w-full">
-        <p class="text-sm font-medium uppercase tracking-wider text-white/75 mb-3">
-          {{ BRAND.appName }}
-        </p>
-        <h1 class="text-4xl xl:text-[2.65rem] font-bold leading-tight mb-6">
+      <div class="relative z-10 flex flex-col justify-center text-white px-10 py-10 xl:px-14 w-full min-h-0">
+        <router-link to="/" class="inline-block mb-5 shrink-0 transition-opacity hover:opacity-90" aria-label="TimeIt — inicio">
+          <BrandLogo variant="fullWhite" size="md" />
+        </router-link>
+        <h1 class="text-3xl xl:text-4xl font-bold leading-tight mb-5">
           Crea tu cuenta y gestiona tu {{ BRAND.categoryLabel.toLowerCase() }}
         </h1>
         <p class="text-lg text-white/85 leading-relaxed max-w-md">
           Dos pasos: tu acceso al panel y los datos básicos del negocio.
         </p>
 
-        <ul class="mt-12 space-y-4 max-w-md">
+        <ul class="mt-8 space-y-3.5 max-w-md">
           <li class="flex gap-4 items-start">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm ring-1 ring-white/25">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -49,26 +49,15 @@
       </div>
     </div>
 
-    <!-- Panel derecho (mismo ritmo visual que Login) -->
-    <div class="flex-1 w-full lg:w-1/2 flex flex-col bg-gray-50">
-      <div class="lg:hidden bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-6 shrink-0">
-        <h1 class="text-2xl font-bold">{{ BRAND.appName }}</h1>
-        <p class="text-white/85 text-sm mt-1">Registro en dos pasos</p>
-      </div>
-
-      <div class="flex-1 flex items-start lg:items-center justify-center px-6 py-8 lg:py-12 overflow-y-auto">
-        <div class="w-full max-w-md mx-auto">
-          <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
-            <div class="mb-6">
-              <h2 class="text-2xl sm:text-3xl font-bold text-gray-900">
-                Crear cuenta
-              </h2>
-              <p class="text-gray-600 mt-2 text-sm sm:text-base">
-                {{ stepTitles[currentStep].subtitle }}
-              </p>
-            </div>
-
-            <div class="flex items-center gap-2 mb-6" aria-label="Progreso del registro">
+    <!-- Panel derecho — formulario a pantalla completa -->
+    <div class="register-page__main flex-1 w-full lg:w-1/2 min-h-0 flex flex-col bg-white lg:bg-gray-50 overflow-hidden">
+      <div class="register-page__form-wrap flex-1 min-h-0 flex flex-col justify-center w-full h-full px-6 sm:px-10 lg:px-12 py-6 sm:py-8 overflow-hidden">
+        <div class="register-page__card w-full mx-auto flex flex-col shrink-0">
+          <div class="register-page__card-header mb-4 shrink-0">
+            <h2 class="text-2xl sm:text-[1.75rem] font-bold text-gray-900">Crear cuenta</h2>
+            <p class="text-gray-600 mt-1.5 text-sm sm:text-base">{{ stepTitles[currentStep].subtitle }}</p>
+          </div>
+            <div class="register-page__steps flex items-center gap-2.5 sm:gap-3 mb-4 shrink-0" aria-label="Progreso del registro">
               <template v-for="(s, idx) in steps" :key="s.id">
                 <button
                   type="button"
@@ -104,7 +93,7 @@
             </div>
 
             <form @submit.prevent="onFormSubmit">
-              <div v-show="currentStep === 0" class="space-y-5">
+              <div v-show="currentStep === 0" class="register-page__fields space-y-3.5">
                 <div>
                   <label
                     for="fullName"
@@ -280,7 +269,7 @@
                 </div>
               </div>
 
-              <div v-show="currentStep === 1" class="space-y-5">
+              <div v-show="currentStep === 1" class="register-page__fields space-y-3.5">
                 <div>
                   <label
                     for="salonName"
@@ -384,11 +373,9 @@
                 </div>
               </div>
             </form>
-          </div>
-
-          <p class="mt-6 text-center text-xs text-gray-500 leading-relaxed max-w-md mx-auto">
-            Al crear una cuenta aceptas un uso profesional conforme a la normativa aplicable para tu negocio.
-          </p>
+            <p class="register-page__legal mt-3 text-center text-xs text-gray-500 leading-snug shrink-0">
+              Al crear una cuenta aceptas un uso profesional conforme a la normativa aplicable para tu negocio.
+            </p>
         </div>
       </div>
     </div>
@@ -396,12 +383,23 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { registerRequest, checkRegistrationEmailRequest } from '@/domains/auth/api/authApi';
 import { BRAND } from '@/config/branding';
+import BrandLogo from '@/components/BrandLogo.vue';
 
 const router = useRouter();
+
+onMounted(() => {
+  document.documentElement.classList.add('register-page-active');
+  document.body.classList.add('register-page-active');
+});
+
+onBeforeUnmount(() => {
+  document.documentElement.classList.remove('register-page-active');
+  document.body.classList.remove('register-page-active');
+});
 
 const steps = [
   { id: 'account', short: 'Tu cuenta', hint: 'Acceso al panel' },
@@ -632,12 +630,39 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
+.register-page {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.register-page__card {
+  width: 100%;
+  max-width: 26rem;
+}
+
+@media (min-width: 640px) {
+  .register-page__card {
+    max-width: 28rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .register-page__card {
+    max-width: 30rem;
+  }
+}
+
+.register-page__fields :deep(label) {
+  margin-bottom: 0.375rem;
+}
+
 .btn-primary {
-  @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 px-5 py-3 rounded-xl bg-purple-600 text-white text-sm font-semibold shadow-sm hover:bg-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 transition-colors duration-150 disabled:opacity-50 disabled:pointer-events-none w-full sm:w-auto;
+  @apply inline-flex min-h-[2.5rem] items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-semibold shadow-sm hover:bg-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 transition-colors duration-150 disabled:opacity-50 disabled:pointer-events-none w-full sm:w-auto;
 }
 
 .btn-secondary {
-  @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 px-5 py-3 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm font-semibold hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 transition-colors duration-150 w-full sm:w-auto;
+  @apply inline-flex min-h-[2.5rem] items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-800 text-sm font-semibold hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 transition-colors duration-150 w-full sm:w-auto;
 }
 
 .btn-ghost {
@@ -645,7 +670,7 @@ async function handleSubmit() {
 }
 
 .register-input {
-  @apply w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder:text-gray-400 outline-none transition-shadow duration-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500;
+  @apply w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white border border-gray-300 rounded-xl text-gray-900 placeholder:text-gray-400 outline-none transition-shadow duration-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500;
 }
 
 .register-input-pl {
@@ -654,5 +679,13 @@ async function handleSubmit() {
 
 .register-input-invalid {
   @apply border-red-500 ring-2 ring-red-500/30 focus:border-red-500 focus:ring-red-500/40;
+}
+</style>
+
+<style>
+html.register-page-active,
+body.register-page-active {
+  overflow: hidden;
+  height: 100%;
 }
 </style>

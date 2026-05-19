@@ -7,9 +7,12 @@
       <div class="absolute bottom-20 right-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
       
       <!-- Contenido -->
-      <div class="relative z-10 flex flex-col justify-center items-center text-white p-12 w-full">
+      <div class="relative z-10 flex flex-col justify-center text-white px-10 py-10 xl:px-14 w-full">
         <div class="max-w-md">
-          <h1 class="text-5xl font-bold mb-6">
+          <router-link to="/" class="inline-block mb-5 transition-opacity hover:opacity-90" aria-label="TimeIt — inicio">
+            <BrandLogo variant="fullWhite" size="md" />
+          </router-link>
+          <h1 class="text-3xl xl:text-4xl font-bold mb-5">
             Bienvenido de vuelta
           </h1>
           <p class="text-xl text-white/90 leading-relaxed">
@@ -49,6 +52,9 @@
     <!-- Panel derecho - Formulario -->
     <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
       <div class="w-full max-w-md">
+        <router-link to="/" class="inline-block mb-6 lg:hidden transition-opacity hover:opacity-90" aria-label="TimeIt — inicio">
+          <BrandLogo variant="fullOnLight" size="md" />
+        </router-link>
         <!-- Encabezado -->
         <div class="mb-8">
           <h2 class="text-3xl font-bold text-gray-900 mb-2">
@@ -300,6 +306,7 @@
 import { ref } from 'vue';
 import { forgotPasswordRequest, loginRequest } from '@/domains/auth/api/authApi';
 import { useRouter } from 'vue-router';
+import BrandLogo from '@/components/BrandLogo.vue';
 
 const router = useRouter();
 const email = ref('');

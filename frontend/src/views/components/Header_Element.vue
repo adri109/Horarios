@@ -9,9 +9,12 @@ import {
 import { useSocket } from '@/composables/useSocket';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import { BRAND } from '@/config/branding';
+import BrandLogo from '@/components/BrandLogo.vue';
 
 const router = useRouter();
 const { on, off } = useSocket();
+
+const emit = defineEmits(['openMobileNav']);
 
 const isDropdownOpen = ref(false);
 const profileButton = ref(null);
@@ -175,20 +178,39 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <header class="bg-white shadow-sm z-10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16">
-        <div class="flex items-center space-x-3">
-          <h2 class="text-2xl font-semibold text-gray-800" id="page-title">
-            {{ BRAND.dashboardLabel }}
-          </h2>
-          <span class="text-gray-500 text-lg font-medium">|</span>
-          <h3 class="text-lg font-semibold text-blue-600">
-            {{ salonName }}
-          </h3>
+  <header class="z-20 shrink-0 bg-white shadow-sm">
+    <div class="mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8">
+      <div class="flex h-14 items-center justify-between gap-2 sm:h-16">
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <router-link
+            to="/dashboard/resume"
+            class="shrink-0 md:hidden"
+            :aria-label="`${BRAND.appName} — ${BRAND.dashboardLabel}`"
+          >
+            <BrandLogo variant="fullOnLight" size="sm" />
+          </router-link>
+          <button
+            type="button"
+            class="inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 md:hidden"
+            aria-label="Abrir menú"
+            @click="emit('openMobileNav')"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+          <div class="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
+            <h2 class="truncate text-lg font-semibold text-gray-800 sm:text-2xl" id="page-title">
+              {{ BRAND.dashboardLabel }}
+            </h2>
+            <span class="hidden shrink-0 text-gray-400 sm:inline">|</span>
+            <h3 class="truncate text-sm font-semibold text-blue-600 sm:text-lg">
+              {{ salonName }}
+            </h3>
+          </div>
         </div>
 
-        <div class="flex items-center space-x-4">
+        <div class="flex shrink-0 items-center gap-2 sm:gap-4">
           <!-- Notificaciones -->
           <div class="relative">
             <button
@@ -222,7 +244,7 @@ onBeforeUnmount(() => {
             <!-- Dropdown de notificaciones -->
             <div
               ref="notificationMenu"
-              class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 transform transition-all duration-300 origin-top-right max-h-96 overflow-y-auto"
+              class="absolute right-0 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] origin-top-right transform rounded-xl border border-gray-100 bg-white py-2 shadow-xl transition-all duration-300 max-h-96 overflow-y-auto sm:w-80"
               :class="{
                 'opacity-100 scale-100 visible': isNotificationOpen,
                 'opacity-0 scale-95 invisible': !isNotificationOpen,
@@ -313,7 +335,7 @@ onBeforeUnmount(() => {
 
             <div
               ref="dropdownMenu"
-              class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 transform transition-all duration-200 origin-top-right"
+              class="absolute right-0 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] origin-top-right transform rounded-xl border border-gray-100 bg-white py-2 shadow-xl transition-all duration-200 sm:w-80"
               :class="{
                 'opacity-100 scale-100 visible': isDropdownOpen,
                 'opacity-0 scale-95 invisible': !isDropdownOpen,

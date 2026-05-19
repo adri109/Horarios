@@ -20,6 +20,8 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 
 dotenv.config();
+// Overrides locales (.env.local) — no va a git; producción usa variables de Render
+dotenv.config({ path: '.env.local', override: true });
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -54,8 +56,10 @@ const allowedOrigins = Array.from(
     ...(!isProduction
       ? [
           'http://localhost:8080',
+          'http://localhost:8081',
           'http://localhost:3000',
           'http://127.0.0.1:8080',
+          'http://127.0.0.1:8081',
           'http://127.0.0.1:3000',
         ]
       : []),
