@@ -1,69 +1,83 @@
-# Checklist de Pre-lanzamiento (Operativo)
+# Checklist de Pre-lanzamiento — TimeIt
 
-Fecha de ejecución: 2026-02-28
-Objetivo: dejar la app lista para publicación controlada en producción.
+**Web:** https://timeit.es  
+**API:** https://api.timeit.es  
+**Deploy:** automático desde GitHub → dos apps (API = raíz repo, Web = carpeta `frontend/`)
 
-Actualización: 2026-02-28 (estado deploy)
+Fecha: 2026-05-25
+
+Guía: [CONFIGURACION_PRODUCCION.md](CONFIGURACION_PRODUCCION.md)
 
 ## 1) Calidad técnica mínima
 
-- [x] Tests críticos backend ejecutados (`auth`, `appointments`, `services`)
-- [x] Build backend en verde (`npm run build`)
-- [x] Build frontend en verde (`frontend/npm run build`)
-- [ ] Smoke test manual de login + creación de cita en entorno deployado
+- [x] Tests críticos backend (`auth`, `appointments`, `services`) — 6/6 OK
+- [x] Build frontend local — OK
+- [x] Build backend (`npm run build`)
+- [x] Smoke test API (`npm run prelaunch:smoke`) — flujo E2E OK (con header Origin)
+- [ ] Smoke test manual: https://timeit.es/login → dashboard → cita
 
-## 2) Claims y comunicación comercial
+## 2) Comunicación y producto
 
-- [x] Mensajes de landing alineados a funcionalidad real
-- [x] `README` alineado a estado real del producto
-- [x] Inventario marcado como “Próximamente” (sin sobrepromesa funcional)
+- [x] Landing alineada a funcionalidad real
+- [x] Docs con dominio timeit.es (sin Render/Vercel/Railway)
+- [x] Inventario como “Próximamente”
+- [x] Copy de login sin promesa de inventario activo
 
-## 3) Configuración de producción (Render + Vercel)
+## 3) Producción (panel de hosting + GitHub)
 
-- [x] Backend en Render con `DATABASE_URL` y `DIRECT_URL` configuradas (confirmado)
-- [x] `JWT_SECRET` robusto (32+ caracteres aleatorios) (confirmado)
-- [x] `FRONTEND_URL` y `CORS_ORIGINS` apuntando al frontend real
-  - Frontend reportado: `https://horarios-six.vercel.app/`
-- [x] Frontend en Vercel con `VUE_APP_API_URL` hacia backend en Render (confirmado)
-- [ ] Migraciones aplicadas en deploy (`npx prisma migrate deploy`) (pendiente confirmación)
-- [x] Health check `/health` respondiendo OK en URL pública
-  - URL: `https://horarios-20ey.onrender.com/health`
-  - Verificación actual: `HTTP 200` con `{ "status": "ok" }`
+Dos apps en el panel, mismo repo `adri109/Horarios`:
 
-## 3.1) Coherencia de release frontend
+### App API (root `/`)
 
-- [ ] Redeploy de frontend con último commit aprobado
-  - Verificación actual en producción: landing muestra copy antiguo (claims y branding previos).
-  - Riesgo: desalineación con los ajustes de publicación ya cerrados en repositorio.
+- [x] API operativa (registro, login, servicios, citas, `/public/:slug`)
+- [x] CORS con `https://timeit.es`
+- [ ] Env en panel: `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `FRONTEND_URL`, `CORS_ORIGINS`, SMTP
+- [x] `/health` OK (desde navegador/proxy con Origin; el proxy bloquea peticiones sin Origin)
 
-## 3.2) Incidencia de conexión front-back (Mar 2026)
+### App Web (root `frontend/`)
 
-- [x] Diagnóstico realizado
-  - Frontend desplegado apunta a backend correcto (`horarios-20ey.onrender.com`).
-  - Fallo principal detectado: CORS sin `Access-Control-Allow-Origin` para el dominio de Vercel en respuestas reales.
-- [x] Corrección aplicada en backend (repositorio)
-  - Normalización de orígenes CORS en [src/index.ts](src/index.ts) para aceptar valores con/sin slash final.
-- [ ] Pendiente despliegue del fix en Render
-  - Acción: redeploy del backend para publicar la corrección.
-  - Verificación posterior: `OPTIONS /auth/login` debe incluir `Access-Control-Allow-Origin: https://horarios-six.vercel.app`.
+- [ ] Root directory: `frontend`
+- [ ] Build: `npm ci --legacy-peer-deps && npm run build`
+- [ ] Publish directory: `dist`
+- [ ] Dominio: `timeit.es`
+- [x] `frontend/.env.production` con `VUE_APP_API_URL=https://api.timeit.es`
+- [ ] **Redeploy pendiente** — producción sirve build antiguo (`/js/index.js` sin hash)
 
-## 4) Revisión funcional mínima post-deploy
+**Estado actual:**
 
-- [ ] Estado actual: validación parcial (falta checklist funcional completo)
-- [ ] Registro de salón nuevo
-- [ ] Login ADMIN
-- [ ] Alta de servicio
-- [ ] Alta de cliente
-- [ ] Alta de cita
-- [ ] Cambio de estado de cita
-- [ ] Carga de página pública `/salon/:slug`
+| Componente | Estado |
+|------------|--------|
+| API funcional | OK (smoke E2E pasó) |
+| Web en producción | Build antiguo — falta push + redeploy |
 
-## 5) Riesgos no bloqueantes detectados
+## 4) Funcional mínimo post-deploy
 
-- [ ] Bundle frontend por encima de recomendación de tamaño (warning de webpack).
-  - Estado actual: **no bloqueante para publicar**.
-  - Acción recomendada: dividir vistas grandes con `import()` en una iteración de performance.
+Verificado por `npm run prelaunch:smoke`:
 
-## Criterio de Go-Live recomendado
+- [x] Registro de salón
+- [x] Login ADMIN
+- [x] Alta de servicio
+- [x] Alta de cliente (reserva pública)
+- [x] Alta de cita (panel)
+- [x] Cambio de estado de cita
+- [ ] `/salon/:slug` en https://timeit.es (requiere redeploy frontend)
 
-Publicar cuando estén completados todos los checks de los bloques 1, 3 y 4.
+## 5) No bloqueante
+
+- [x] Bundle frontend con `import()` en router
+
+## Verificación
+
+```bash
+npm run prelaunch:verify
+npm run prelaunch:smoke
+```
+
+## Go-Live
+
+1. **Commit + push** de los cambios pendientes a GitHub.
+2. Redeploy app **Web** (`frontend/`) — es lo que falta para landing, login copy y rutas lazy.
+3. Prueba manual en https://timeit.es/login.
+4. `npm run prelaunch:verify` debe pasar también el check de frontend bundle.
+
+Dominio público: **timeit.es**.

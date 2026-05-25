@@ -16,7 +16,7 @@
             Bienvenido de vuelta
           </h1>
           <p class="text-xl text-white/90 leading-relaxed">
-            Gestiona tu salón de belleza de forma profesional. Organiza citas, controla tu inventario y ofrece la mejor experiencia a tus clientes.
+            Gestiona tu salón de belleza de forma profesional. Organiza citas, tu equipo y tus clientes desde un solo lugar.
           </p>
           
           <div class="mt-12 space-y-4">

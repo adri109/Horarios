@@ -259,30 +259,30 @@
 
           <div class="grid md:grid-cols-2 gap-6">
             <div class="bg-white/5 rounded-xl p-6 border border-white/10">
-              <h3 class="text-2xl font-semibold text-white mb-4">Railway</h3>
+              <h3 class="text-2xl font-semibold text-white mb-4">API — api.timeit.es</h3>
               <p class="text-white/80 mb-4">
-                Backend desplegado en Railway con PostgreSQL managed database. Build automático 
-                con Nixpacks, migraciones Prisma en runtime y healthcheck endpoint para monitoring.
+                Backend Node.js + Express. PostgreSQL (Supabase), migraciones Prisma al arranque
+                y <code class="text-white/90">/health</code> para monitorización.
               </p>
               <div class="flex items-center gap-2 text-green-300">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span class="font-semibold">Estado: Operativo</span>
+                <span class="font-semibold">Producción</span>
               </div>
             </div>
 
             <div class="bg-white/5 rounded-xl p-6 border border-white/10">
-              <h3 class="text-2xl font-semibold text-white mb-4">Vercel</h3>
+              <h3 class="text-2xl font-semibold text-white mb-4">Web — timeit.es</h3>
               <p class="text-white/80 mb-4">
-                Frontend desplegado en Vercel con build optimizado de Vue CLI. Variables de entorno 
-                configuradas, CORS habilitado y CDN global para baja latencia.
+                SPA Vue 3. Build con Vue CLI, <code class="text-white/90">VUE_APP_API_URL</code>
+                apuntando a la API y rutas SPA para Vue Router.
               </p>
               <div class="flex items-center gap-2 text-green-300">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span class="font-semibold">Estado: Operativo</span>
+                <span class="font-semibold">Producción</span>
               </div>
             </div>
           </div>

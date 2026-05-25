@@ -20,7 +20,7 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 
 dotenv.config();
-// Overrides locales (.env.local) — no va a git; producción usa variables de Render
+// Overrides locales (.env.local) — no va a git
 dotenv.config({ path: '.env.local', override: true });
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -35,10 +35,9 @@ const app = express();
 const httpServer = createServer(app);
 
 const isProduction = process.env.NODE_ENV === 'production';
-const defaultProductionOrigins = ['https://horarios-six.vercel.app'];
-const trustedOriginPatterns = [
-  /^https:\/\/horarios-[a-z0-9-]+-adri109s-projects\.vercel\.app$/i,
-];
+
+/** Dominio público TimeIt (producción) */
+const productionSiteOrigins = ['https://timeit.es', 'https://www.timeit.es'];
 
 const normalizeOrigin = (value: string) => value.trim().replace(/\/+$/, '');
 
@@ -52,7 +51,7 @@ const allowedOrigins = Array.from(
   new Set([
     ...parseOrigins(process.env.CORS_ORIGINS),
     ...(process.env.FRONTEND_URL ? [normalizeOrigin(process.env.FRONTEND_URL)] : []),
-    ...(isProduction ? defaultProductionOrigins.map(normalizeOrigin) : []),
+    ...(isProduction ? productionSiteOrigins.map(normalizeOrigin) : []),
     ...(!isProduction
       ? [
           'http://localhost:8080',
@@ -73,11 +72,7 @@ const isAllowedOrigin = (origin?: string) => {
 
   const normalizedOrigin = normalizeOrigin(origin);
 
-  if (allowedOrigins.includes(normalizedOrigin)) {
-    return true;
-  }
-
-  return trustedOriginPatterns.some((pattern) => pattern.test(normalizedOrigin));
+  return allowedOrigins.includes(normalizedOrigin);
 };
 
 const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '1mb';
@@ -211,7 +206,7 @@ app.get('/health', (req, res) => {
 
 // Ruta raíz
 app.get('/', (req, res) => {
-  res.json({ message: 'API Horarios - Backend funcionando correctamente' });
+  res.json({ message: 'API TimeIt - Backend funcionando correctamente' });
 });
 
 // Rutas de la API

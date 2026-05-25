@@ -117,8 +117,21 @@ npx prisma generate
 
 - Usa `DATABASE_URL` con el **Connection Pooler** de Supabase (puerto 6543) para ejecución normal.
 - Usa `DIRECT_URL` con la conexión **directa** de Supabase (puerto 5432) para migraciones.
-- En producción (Render), configura ambas variables en el panel de entorno.
+- En producción, configura ambas variables en el entorno del servidor del API.
 - Para aplicar migraciones en producción: `npx prisma migrate deploy`.
+
+### 4️⃣.1 Despliegue en producción
+
+| Servicio | URL |
+|----------|-----|
+| **Web** | https://timeit.es |
+| **API** | https://api.timeit.es |
+
+Despliegue en tu servidor con DNS en timeit.es. Documentación:
+
+- [CONFIGURACION_PRODUCCION.md](CONFIGURACION_PRODUCCION.md)
+- [CONFIGURACION_CORS_PRODUCCION.md](CONFIGURACION_CORS_PRODUCCION.md)
+- [frontend/README.md](frontend/README.md)
 
 **Opcional - Ver la base de datos:**
 ```bash
@@ -299,9 +312,9 @@ npx prisma studio              # Interfaz visual de BD
 - Reinicia VS Code para actualizar TypeScript
 
 ### Frontend no conecta con Backend
-- Verifica que el backend esté corriendo en puerto 3000
-- Comprueba CORS en `src/index.ts`
-- Revisa la URL del API en los componentes Vue
+- En local: backend en puerto 3000 y `VUE_APP_API_URL=http://localhost:3000` en `frontend/.env.development.local`
+- En producción: `VUE_APP_API_URL=https://api.timeit.es` y en el API `FRONTEND_URL` / `CORS_ORIGINS` con `https://timeit.es`
+- Guía: [CONFIGURACION_CORS_PRODUCCION.md](CONFIGURACION_CORS_PRODUCCION.md)
 
 ## 📄 Licencia
 

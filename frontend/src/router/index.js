@@ -1,24 +1,22 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Landing from '../views/Landing_Page.vue';
-import Login from '../views/Login_Page.vue';
-import Register from '../views/Register_Page.vue';
-import Dashboard from '../views/Dashboard_Page.vue';
-import ResetPassword from '../views/ResetPassword_Page.vue';
-import TechInfo from '../views/TechInfo_Page.vue';
 
-// Páginas hijas de Dashboard
-import Citas from '../views/dashboard/Citas_Element.vue';
-import Clientes from '../views/dashboard/Clientes_Element.vue';
-import Personal from '../views/dashboard/Personal_Element.vue';
-import Servicios from '../views/dashboard/Servicios_Element.vue';
-import Inventario from '../views/dashboard/Inventario_Element.vue';
-import Informes from '../views/dashboard/Informes_Element.vue';
-import Marketing from '../views/dashboard/Marketing_Element.vue';
-import Configuracion from '../views/dashboard/Configuracion_Element.vue';
-import Resume from '../views/dashboard/Resume_Element.vue';
+const Landing = () => import('../views/Landing_Page.vue');
+const Login = () => import('../views/Login_Page.vue');
+const Register = () => import('../views/Register_Page.vue');
+const Dashboard = () => import('../views/Dashboard_Page.vue');
+const ResetPassword = () => import('../views/ResetPassword_Page.vue');
+const TechInfo = () => import('../views/TechInfo_Page.vue');
+const SalonPublicPage = () => import('../views/SalonPublicPage.vue');
 
-// Página pública de salón
-import SalonPublicPage from '../views/SalonPublicPage.vue';
+const Citas = () => import('../views/dashboard/Citas_Element.vue');
+const Clientes = () => import('../views/dashboard/Clientes_Element.vue');
+const Personal = () => import('../views/dashboard/Personal_Element.vue');
+const Servicios = () => import('../views/dashboard/Servicios_Element.vue');
+const Inventario = () => import('../views/dashboard/Inventario_Element.vue');
+const Informes = () => import('../views/dashboard/Informes_Element.vue');
+const Marketing = () => import('../views/dashboard/Marketing_Element.vue');
+const Configuracion = () => import('../views/dashboard/Configuracion_Element.vue');
+const Resume = () => import('../views/dashboard/Resume_Element.vue');
 
 const routes = [
   { path: '/', name: 'Landing', component: Landing },
@@ -41,7 +39,6 @@ const routes = [
     component: TechInfo,
   },
 
-  // Ruta pública del salón
   {
     path: '/salon/:slug',
     name: 'SalonPublic',
@@ -74,7 +71,6 @@ const router = createRouter({
   routes,
 });
 
-// Protección de rutas
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
 

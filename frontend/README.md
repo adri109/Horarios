@@ -1,38 +1,37 @@
-# frontend
+# Frontend — TimeIt
 
-## Project setup
-```
+**Producción:** https://timeit.es  
+**API:** https://api.timeit.es
+
+## Desarrollo local
+
+```bash
 npm install
-```
-
-### Compiles and hot-reloads for development
-```
 npm run serve
 ```
 
-### Compiles and minifies for production
+1. API en la raíz: `npm run dev` → `http://localhost:3000`
+2. Copia `.env.development.local.example` → `.env.development.local`
+
+## Build de producción
+
+```bash
+# Definir la URL del API antes del build (se embebe en el bundle)
+VUE_APP_API_URL=https://api.timeit.es npm run build
 ```
-npm run build
+
+PowerShell:
+
+```powershell
+$env:VUE_APP_API_URL="https://api.timeit.es"; npm run build
 ```
 
-### Lints and fixes files
-```
-npm run lint
-```
+Sube `dist/` a tu servidor web (nginx, Apache, etc.). SPA: `public/_redirects` o regla `try_files` en nginx (ver [CONFIGURACION_PRODUCCION.md](../CONFIGURACION_PRODUCCION.md)).
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+## Scripts
 
-## Desarrollo local (API)
-
-1. En la raíz del repo: `npm run dev` (backend en `http://localhost:3000`).
-2. En `frontend/`: copia `.env.development.local.example` → `.env.development.local`.
-3. `npm run serve` — el frontend usará `http://localhost:3000` y **no** tocará la config de Vercel.
-
-Los archivos `.env*` y `.env.development.local` están en `.gitignore` y no se suben a GitHub.
-
-## Deploy en Vercel
-
-- Configura el proyecto en Vercel con `Root Directory = frontend`.
-- Define `VUE_APP_API_URL` apuntando al backend de Render (solo en el panel de Vercel).
-- Este proyecto incluye `vercel.json` con rewrite SPA para Vue Router.
+| Comando | Descripción |
+|---------|-------------|
+| `npm run serve` | Desarrollo con hot-reload |
+| `npm run build` | Build para producción |
+| `npm run lint` | ESLint |
