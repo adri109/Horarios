@@ -1,5 +1,6 @@
 import { io } from '../index';
 import { createSmtpTransport } from '../utils/smtpTransport';
+import logger from '../utils/logger';
 
 const transporter = createSmtpTransport();
 
@@ -188,12 +189,6 @@ export async function sendAppointmentConfirmationWhatsApp(data: AppointmentEmail
 
   if (!whatsappToken || !whatsappPhoneId) {
     console.log('⚠️ WhatsApp no configurado (falta WHATSAPP_TOKEN o WHATSAPP_PHONE_ID)');
-    console.log('📱 Mensaje que se enviaría por WhatsApp:');
-    console.log(`   Destinatario: ${data.clientPhone}`);
-    console.log(`   ¡Cita Confirmada en ${data.salonName}!`);
-    console.log(`   Servicio: ${data.serviceName}`);
-    console.log(`   📅 ${data.date} a las ${data.time}`);
-    console.log(`   💰 €${data.price}`);
     return false;
   }
 
@@ -336,7 +331,7 @@ export async function sendEmail(to: string, subject: string, message: string): P
       html: emailContent,
     });
 
-    console.log(`✅ Email enviado a: ${to}`);
+    logger.debug('Email transaccional enviado');
     return true;
   } catch (error) {
     console.error('❌ Error enviando email:', error);
@@ -385,7 +380,7 @@ export async function sendWhatsApp(phone: string, message: string): Promise<bool
       return false;
     }
 
-    console.log(`✅ WhatsApp enviado a: ${phone}`);
+    logger.debug('WhatsApp enviado');
     return true;
   } catch (error: any) {
     console.error('❌ Error enviando WhatsApp:', error.message);

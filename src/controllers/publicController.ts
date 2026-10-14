@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { sendAppointmentNotifications } from '../services/notificationService';
 import { createNotification } from '../controllers/notificationController';
 import prisma from '../utils/prisma';
+import logger from '../utils/logger';
 
 // Obtener los datos públicos del salón y servicios
 export const getSalonPublic = async (req: Request, res: Response) => {
@@ -279,7 +280,7 @@ export const createPublicAppointment = async (req: Request, res: Response) => {
     const start = new Date(startTime);
     const end = new Date(start.getTime() + service.duration * 60000);
 
-    console.log(`📅 Creando cita: ${clientName} - ${service.name}`);
+    logger.debug({ serviceId: service.id }, 'Creando cita pública');
     console.log(`🕐 Horario: ${start.toISOString()} - ${end.toISOString()}`);
 
     // 4. Verificar que no hay conflictos (opcional pero recomendado)
@@ -336,9 +337,9 @@ export const createPublicAppointment = async (req: Request, res: Response) => {
           salonId: salon.id,
         },
       });
-      console.log(`✅ Cliente creado: ${client.name} (ID: ${client.id})`);
+      logger.debug({ clientId: client.id }, 'Cliente creado');
     } else {
-      console.log(`✅ Cliente existente: ${client.name} (ID: ${client.id})`);
+      logger.debug({ clientId: client.id }, 'Cliente existente');
     }
 
     // 6. Crear la cita (stylistId será el admin del salón por defecto).
