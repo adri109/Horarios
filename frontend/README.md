@@ -1,7 +1,9 @@
 # Frontend — TimeIt
 
-**Producción:** https://timeit.es  
-**API:** https://api.timeit.es
+> Proyecto académico sin despliegue público. Los dominios `timeit.es` y `api.timeit.es` que aparecen en este proyecto son de referencia, no servicios activos.
+
+**Despliegue de referencia:** `https://timeit.es`  
+**API de referencia:** `https://api.timeit.es`
 
 ## Desarrollo local
 
@@ -26,7 +28,7 @@ PowerShell:
 $env:VUE_APP_API_URL="https://api.timeit.es"; npm run build
 ```
 
-Sube `dist/` a tu servidor web (nginx, Apache, etc.). SPA: `public/_redirects` o regla `try_files` en nginx (ver [CONFIGURACION_PRODUCCION.md](../CONFIGURACION_PRODUCCION.md)).
+Sube `dist/` a tu servidor web (nginx, Apache, etc.). SPA: `public/_redirects` o regla `try_files` en nginx (ver [CONFIGURACION_PRODUCCION.md](../docs/CONFIGURACION_PRODUCCION.md)).
 
 ## Scripts
 

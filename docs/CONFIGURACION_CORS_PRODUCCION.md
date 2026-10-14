@@ -1,5 +1,7 @@
 # CORS — TimeIt (producción)
 
+> **Documento de referencia.** Este proyecto es académico y no está desplegado públicamente. El dominio `timeit.es` y las URL que aparecen aquí son ejemplos de configuración, no servicios activos.
+
 **Web:** `https://timeit.es`  
 **API:** `https://api.timeit.es`
 
