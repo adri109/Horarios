@@ -12,7 +12,7 @@ export const getSalonBySlug = async (req: Request, res: Response) => {
     if (!salon) return res.status(404).json({ error: 'Salón no encontrado' });
 
     // Generar slots de ejemplo si existe config
-    let availableSlots: string[] = [];
+    const availableSlots: string[] = [];
     if (salon.config) {
       const openingTime = salon.config.openingTime || '09:00';
       const closingTime = salon.config.closingTime || '18:00';

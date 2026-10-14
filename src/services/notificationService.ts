@@ -1,4 +1,4 @@
-import { io } from '../index';
+import axios from 'axios';
 import { createSmtpTransport } from '../utils/smtpTransport';
 import logger from '../utils/logger';
 
@@ -211,8 +211,6 @@ ${data.salonAddress ? `📍 *Dirección:* ${data.salonAddress}\n` : ''}${data.sa
 _Por favor, llega 5 minutos antes de tu cita._
 
 ¡Gracias por tu reserva! 🙌`;
-
-    const axios = require('axios');
     const response = await axios.post(
       `https://graph.facebook.com/v21.0/${whatsappPhoneId}/messages`,
       {

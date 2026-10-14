@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { io } from '../index';
 import prisma from '../utils/prisma';
+import logger from '../utils/logger';
 import { AuthRequest } from '../types/auth';
 
 export const getAllAppointments = async (req: AuthRequest, res: Response) => {
@@ -186,6 +187,7 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(appointment);
   } catch (error) {
+    logger.error({ error }, 'Error creando cita');
     res.status(500).json({ error: 'Error creando cita' });
   }
 };

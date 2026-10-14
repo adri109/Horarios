@@ -22,7 +22,7 @@ export const getSalonPublic = async (req: Request, res: Response) => {
     if (!salon) return res.status(404).json({ error: 'Salón no encontrado' });
 
     // Generar slots de ejemplo para hoy (opcional)
-    let availableSlots: string[] = [];
+    const availableSlots: string[] = [];
     if (salon.config) {
       const openingTime = salon.config.openingTime || '09:00';
       const closingTime = salon.config.closingTime || '18:00';
@@ -63,7 +63,7 @@ export const getSalonPublic = async (req: Request, res: Response) => {
 // Obtener slots de un salón para una fecha específica
 export const getSalonSlots = async (req: Request, res: Response) => {
   const { slug } = req.params;
-  const { date, serviceId, duration } = req.query;
+  const { date, duration } = req.query;
 
   if (!date || typeof date !== 'string') {
     return res.status(400).json({ error: 'Falta la fecha' });
