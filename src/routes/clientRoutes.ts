@@ -7,6 +7,8 @@ import {
 } from '../controllers/clientController';
 import { authenticateToken } from '../middleware/auth';
 import { checkPermission } from '../middleware/permissions';
+import { validateBody } from '../middleware/validation';
+import { updateClientSchema } from '../validators/clientSchemas';
 
 const router = express.Router();
 
@@ -20,7 +22,7 @@ router.get('/', checkPermission('canViewClients'), getClients);
 router.get('/:id', checkPermission('canViewClients'), getClientById);
 
 // PUT /clients/:id - Actualizar un cliente (requiere editar clientes)
-router.put('/:id', checkPermission('canEditClients'), updateClient);
+router.put('/:id', checkPermission('canEditClients'), validateBody(updateClientSchema), updateClient);
 
 // DELETE /clients/:id - Eliminar un cliente (requiere eliminar clientes)
 router.delete('/:id', checkPermission('canDeleteClients'), deleteClient);

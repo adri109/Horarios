@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendEmail, sendWhatsApp } from '../services/notificationService';
 import prisma from '../utils/prisma';
+import logger from '../utils/logger';
 
 interface CampaignRequest {
   channel: 'email' | 'whatsapp' | 'both';
@@ -86,19 +87,19 @@ export const sendCampaign = async (req: Request, res: Response) => {
             personalizedSubject,
             personalizedMessage
           );
-          console.log(`✅ Email enviado a ${client.name} (${client.email})`);
+          logger.debug({ clientId: client.id }, 'Email de campaña enviado');
           sent = true;
         } else if (channel === 'email' || channel === 'both') {
-          console.log(`⚠️ ${client.name} no tiene email registrado`);
+          logger.debug({ clientId: client.id }, 'Cliente sin email registrado');
         }
 
         // Enviar por WhatsApp
         if ((channel === 'whatsapp' || channel === 'both') && client.phone) {
           await sendWhatsApp(client.phone, personalizedMessage);
-          console.log(`✅ WhatsApp enviado a ${client.name} (${client.phone})`);
+          logger.debug({ clientId: client.id }, 'WhatsApp de campaña enviado');
           sent = true;
         } else if (channel === 'whatsapp' || channel === 'both') {
-          console.log(`⚠️ ${client.name} no tiene teléfono registrado`);
+          logger.debug({ clientId: client.id }, 'Cliente sin teléfono registrado');
         }
 
         if (sent) {

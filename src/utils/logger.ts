@@ -13,6 +13,10 @@ const logger = pino({
 
 export const bridgeConsoleToLogger = () => {
   const safeStringify = (value: unknown) => {
+    // JSON.stringify(Error) devuelve "{}": se conserva el mensaje y la traza.
+    if (value instanceof Error) {
+      return value.stack || `${value.name}: ${value.message}`;
+    }
     try {
       return JSON.stringify(value);
     } catch {
