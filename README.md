@@ -1,88 +1,86 @@
-# 💈 Sistema de Gestión para Salones de Belleza
+# TimeIt — Sistema de gestión para salones de belleza
 
 Aplicación web para la gestión diaria de salones de belleza, peluquerías y centros estéticos. Sistema multi-tenant con panel administrativo y página pública de reservas.
 
-## 📋 Características Principales
+> **Proyecto académico.** Desarrollado como Proyecto Final del ciclo formativo de Grado Superior en Desarrollo de Aplicaciones Web (CPIFP Bajo Aragón). No existe un despliegue público activo; el proyecto se ejecuta en local siguiendo las instrucciones de este documento.
 
-- ✅ **Gestión de Citas**: Creación, edición, confirmación y cancelación de citas
-- 👥 **Control de Clientes**: Historial completo, estadísticas y búsqueda avanzada
-- 👨‍💼 **Gestión de Personal**: Roles, permisos personalizados y asignación de tareas
-- 💇 **Servicios**: Administración de servicios con precios y duraciones
-- 📦 **Inventario (Próximamente)**: Módulo reservado para una próxima versión
-- 📊 **Informes y Estadísticas**: Panel con métricas clave y exportación CSV
-- 📧 **Notificaciones**: Sistema integrado con Email (Gmail) y soporte de WhatsApp según integración disponible
-- 🎯 **Marketing**: Campañas promocionales por email y WhatsApp
-- 🌐 **Reserva Pública**: Página de reservas personalizada con URL única
-- 🔐 **Sistema de Autenticación**: JWT con roles y permisos granulares
-- 🏢 **Multi-tenant**: Cada salón con datos completamente aislados
+## Características principales
 
-## 🛠️ Tecnologías Utilizadas
+- **Gestión de citas:** creación, edición, confirmación y cancelación.
+- **Control de clientes:** historial completo, estadísticas y búsqueda avanzada.
+- **Gestión de personal:** roles, permisos personalizados y asignación de tareas.
+- **Servicios:** administración de servicios con precios y duraciones.
+- **Informes y estadísticas:** panel con métricas clave y exportación CSV.
+- **Notificaciones:** correo electrónico (Gmail) y soporte de WhatsApp según la integración disponible.
+- **Marketing:** campañas promocionales por correo y WhatsApp.
+- **Reserva pública:** página de reservas personalizada con URL única por salón.
+- **Autenticación:** JWT con roles y permisos granulares.
+- **Multi-tenant:** cada salón con sus datos completamente aislados.
+- **Inventario:** módulo reservado para una versión futura.
 
-### Backend
-- **Node.js** + **Express.js** + **TypeScript**
-- **PostgreSQL** con **Prisma ORM**
-- **JWT** para autenticación
-- **bcrypt** para encriptación de contraseñas
-- **Nodemailer** para envío de emails
-- **WhatsApp Business API** para notificaciones
+## Tecnologías
 
-### Frontend
-- **Vue.js 3** (Composition API)
-- **Vue Router** para navegación
-- **Tailwind CSS** para estilos
-- **Axios** para peticiones HTTP
+**Backend**
 
-## 📦 Requisitos Previos
+- Node.js + Express.js + TypeScript
+- PostgreSQL con Prisma ORM
+- JWT para autenticación
+- bcrypt para el cifrado de contraseñas
+- Nodemailer para el envío de correos
+- WhatsApp Business API para notificaciones
 
-Antes de comenzar, asegúrate de tener instalado:
+**Frontend**
 
-- **Node.js** 16+ ([Descargar](https://nodejs.org/))
-- **PostgreSQL** 12+ ([Descargar](https://www.postgresql.org/download/))
-- **npm** o **yarn** (incluido con Node.js)
-- **Git** ([Descargar](https://git-scm.com/))
+- Vue.js 3 (Composition API)
+- Vue Router
+- Tailwind CSS
+- Axios
 
-## 🚀 Instalación y Configuración
+## Requisitos previos
 
-### 1️⃣ Clonar el repositorio
+- Node.js 16 o superior
+- PostgreSQL 12 o superior
+- npm o yarn (incluido con Node.js)
+- Git
+
+## Instalación y configuración
+
+### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/nombre-repositorio.git
-cd nombre-repositorio
+git clone https://github.com/adri109/Horarios.git
+cd Horarios
 ```
 
-### 2️⃣ Instalar dependencias
+### 2. Instalar dependencias
 
-**Backend:**
+Backend:
+
 ```bash
 npm install
 ```
 
-**Frontend:**
+Frontend:
+
 ```bash
 cd frontend
 npm install
 cd ..
 ```
 
-### 3️⃣ Configurar variables de entorno
+### 3. Variables de entorno
 
-Crea un archivo `.env` en la raíz del proyecto:
+Crea un archivo `.env` en la raíz del proyecto (puedes partir de `.env.example`):
 
 ```env
 # Base de datos PostgreSQL (local)
 DATABASE_URL="postgresql://usuario:contraseña@localhost:5432/nombre_db"
 
-# Supabase (producción con Prisma)
-# Runtime (pooler)
-# DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require"
-# Migraciones (directa)
-# DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?sslmode=require"
-
 # Seguridad JWT
-JWT_SECRET="cadena_muy_larga_y_segura_aleatoria"
+JWT_SECRET="cadena_larga_segura_y_aleatoria"
 PORT=3000
 
-# Configuración de Email (Gmail)
+# Correo (Gmail)
 SMTP_USER="tu_email@gmail.com"
 SMTP_PASS="tu_contraseña_de_aplicacion"
 
@@ -91,255 +89,180 @@ WHATSAPP_TOKEN="tu_token_de_whatsapp_business_api"
 WHATSAPP_PHONE_ID="tu_phone_id"
 ```
 
-#### 📧 Configurar Gmail para SMTP
+Si usas un proveedor con *connection pooler* (por ejemplo Supabase), define además `DIRECT_URL` con la conexión directa para las migraciones y utiliza `sslmode=require` en ambas URL.
 
-1. Ve a tu cuenta de Google
-2. Activa la verificación en 2 pasos
-3. Genera una "Contraseña de aplicación" en: https://myaccount.google.com/apppasswords
-4. Usa esa contraseña en `SMTP_PASS`
+**Configurar Gmail para SMTP**
 
-### 4️⃣ Configurar la base de datos
+1. Accede a tu cuenta de Google.
+2. Activa la verificación en dos pasos.
+3. Genera una «contraseña de aplicación» en <https://myaccount.google.com/apppasswords>.
+4. Úsala en `SMTP_PASS`.
 
-**Crear base de datos en PostgreSQL:**
+### 4. Base de datos
+
+Crea la base de datos en PostgreSQL:
 
 ```sql
 CREATE DATABASE nombre_db;
 ```
 
-**Ejecutar migraciones de Prisma:**
+Ejecuta las migraciones y genera el cliente de Prisma:
 
 ```bash
 npx prisma migrate deploy
 npx prisma generate
 ```
 
-#### 🔗 Configuración recomendada para Supabase + Prisma
+Opcional, para inspeccionar la base de datos:
 
-- Usa `DATABASE_URL` con el **Connection Pooler** de Supabase (puerto 6543) para ejecución normal.
-- Usa `DIRECT_URL` con la conexión **directa** de Supabase (puerto 5432) para migraciones.
-- En producción, configura ambas variables en el entorno del servidor del API.
-- Para aplicar migraciones en producción: `npx prisma migrate deploy`.
-
-### 4️⃣.1 Despliegue en producción
-
-| Servicio | URL |
-|----------|-----|
-| **Web** | https://timeit.es |
-| **API** | https://api.timeit.es |
-
-Despliegue en tu servidor con DNS en timeit.es. Documentación:
-
-- [CONFIGURACION_PRODUCCION.md](CONFIGURACION_PRODUCCION.md)
-- [CONFIGURACION_CORS_PRODUCCION.md](CONFIGURACION_CORS_PRODUCCION.md)
-- [frontend/README.md](frontend/README.md)
-
-**Opcional - Ver la base de datos:**
 ```bash
 npx prisma studio
 ```
-Esto abre una interfaz web en `http://localhost:5555`
 
-### 5️⃣ Arrancar el proyecto
+### 5. Arrancar el proyecto
 
-**Opción A - Dos terminales separadas:**
+Backend (con recarga automática):
 
-Terminal 1 - Backend:
 ```bash
 npm run dev
 ```
 
-Terminal 2 - Frontend:
+Frontend (en otra terminal):
+
 ```bash
 cd frontend
 npm run serve
 ```
 
-**Opción B - Modo desarrollo:**
+### 6. Acceso
 
-Backend (con auto-reload):
-```bash
-npm run dev
-```
+- Frontend: <http://localhost:8080>
+- API: <http://localhost:3000>
+- Prisma Studio: <http://localhost:5555> (si está activo)
 
-Frontend (con hot-reload):
-```bash
-cd frontend
-npm run dev
-```
-
-### 6️⃣ Acceder a la aplicación
-
-- **Frontend**: http://localhost:8080
-- **Backend API**: http://localhost:3000
-- **Prisma Studio**: http://localhost:5555 (si está activo)
-
-## 📂 Estructura del Proyecto
+## Estructura del proyecto
 
 ```
-proyecto/
-├── src/                          # Backend (Node.js + TypeScript)
-│   ├── controllers/              # Lógica de negocio
-│   ├── routes/                   # Definición de rutas API
-│   ├── middleware/               # Autenticación y permisos
-│   ├── services/                 # Servicios (emails, notificaciones)
-│   └── index.ts                  # Punto de entrada del servidor
-│
-├── prisma/                       # Prisma ORM
-│   ├── schema.prisma             # Definición del modelo de datos
-│   └── migrations/               # Historial de migraciones
-│
-├── frontend/                     # Frontend (Vue.js 3)
+Horarios/
+├── src/                      # Backend (Node.js + TypeScript)
+│   ├── controllers/          # Lógica de negocio
+│   ├── routes/               # Definición de rutas de la API
+│   ├── middleware/           # Autenticación y permisos
+│   ├── services/             # Servicios (correo, notificaciones)
+│   └── index.ts              # Punto de entrada del servidor
+├── prisma/
+│   ├── schema.prisma         # Modelo de datos
+│   └── migrations/           # Historial de migraciones
+├── frontend/                 # Frontend (Vue.js 3)
 │   ├── src/
-│   │   ├── views/                # Páginas principales
-│   │   │   ├── components/       # Componentes compartidos
-│   │   │   └── dashboard/        # Componentes del dashboard
-│   │   ├── router/               # Configuración de rutas
-│   │   └── assets/               # Estilos y recursos
-│   └── public/                   # Archivos estáticos
-│
-├── .env                          # Variables de entorno (NO subir a Git)
-├── package.json                  # Dependencias del backend
-└── README.md                     # Este archivo
+│   │   ├── views/            # Páginas principales
+│   │   ├── components/       # Componentes compartidos
+│   │   ├── router/           # Configuración de rutas
+│   │   └── assets/           # Estilos y recursos
+│   └── public/               # Archivos estáticos
+├── tests/                    # Pruebas
+├── .env.example              # Plantilla de variables de entorno
+├── package.json              # Dependencias del backend
+└── README.md
 ```
 
-## 🔐 Primer Uso
+> Ajusta este árbol a la estructura real si alguna carpeta difiere (por ejemplo, la ubicación de `components/` dentro de `frontend/src/`).
 
-### Registrar un salón
+## Primer uso
 
-1. Ve a http://localhost:8080/register
-2. Completa el formulario con:
-   - Email y contraseña del administrador
-   - Nombre completo
-   - Nombre del salón
-   - Dirección y teléfono (opcional)
-3. Esto creará:
-   - Tu usuario ADMIN
-   - Tu salón con un slug único
-   - La configuración básica
+1. Abre <http://localhost:8080/register>.
+2. Completa el formulario: correo y contraseña del administrador, nombre completo, nombre del salón y, opcionalmente, dirección y teléfono.
+3. Se creará el usuario ADMIN, el salón con un *slug* único y la configuración básica.
 
-### Página pública de reservas
+Página pública de reservas de cada salón (local):
 
-Una vez registrado, tus clientes podrán reservar en:
 ```
-http://localhost:8080/salon/tu-slug-unico
+http://localhost:8080/salon/<slug-del-salon>
 ```
 
-El slug se genera automáticamente del nombre de tu salón.
+El *slug* se genera automáticamente a partir del nombre del salón.
 
-## 👥 Roles y Permisos
+## Roles y permisos
 
-### ADMIN
-- Acceso completo a todas las funcionalidades
-- Gestión de personal y permisos
-- Configuración del salón
-- Acceso a informes financieros
+**ADMIN**
 
-### WORKER (Trabajador)
-- Permisos personalizables por el ADMIN
-- Puede incluir: ver/editar/eliminar clientes y servicios
-- Acceso a citas asignadas
-- Sin acceso a configuración ni gestión de personal
+- Acceso completo a todas las funcionalidades.
+- Gestión de personal y permisos.
+- Configuración del salón.
+- Acceso a informes financieros.
 
-## 📱 Funcionalidades Destacadas
+**WORKER (trabajador)**
 
-### 🔔 Sistema de Notificaciones
-- Notificaciones en tiempo real en el header
-- Alertas de nuevas citas
-- Recordatorios automáticos
-- Actualización cada 30 segundos
+- Permisos personalizables por el ADMIN (ver, editar o eliminar clientes y servicios).
+- Acceso a las citas asignadas.
+- Sin acceso a configuración ni a gestión de personal.
 
-### 📧 Campañas de Marketing
-- Envío masivo por email o WhatsApp
-- Plantillas predefinidas (promociones, recordatorios)
-- Personalización con variables: `{nombre}`, `{salon_name}`
-- Selección de destinatarios
+## Funcionalidades destacadas
 
-### 📊 Informes y Estadísticas
-- Filtros por periodo (semana, mes, año, personalizado)
-- Métricas clave: ingresos, citas completadas, tasa de cancelación
-- Servicios más populares
-- Clientes TOP
-- Exportación a CSV
+- **Notificaciones:** avisos en la cabecera, alertas de nuevas citas, recordatorios y actualización cada 30 segundos.
+- **Campañas de marketing:** envío masivo por correo o WhatsApp, plantillas predefinidas, variables de personalización (`{nombre}`, `{salon_name}`) y selección de destinatarios.
+- **Informes:** filtros por periodo, métricas clave (ingresos, citas completadas, tasa de cancelación), servicios más populares, mejores clientes y exportación a CSV.
+- **Horarios:** configuración por día de la semana, varios bloques por día, cálculo dinámico de huecos disponibles y prevención de conflictos entre citas.
 
-### 🗓️ Gestión de Horarios
-- Configuración de horarios por día de la semana
-- Bloques de horario múltiples por día
-- Sistema de slots disponibles dinámico
-- Prevención de conflictos de citas
+## Scripts disponibles
 
-## 🔧 Scripts Disponibles
+**Backend**
 
-### Backend
 ```bash
-npm run dev          # Desarrollo con auto-reload
-npm run build        # Compilar TypeScript
-npm start            # Producción (después de build)
+npm run dev      # Desarrollo con recarga automática
+npm run build    # Compilar TypeScript
+npm start        # Ejecutar la versión compilada
 ```
 
-### Frontend
+**Frontend**
+
 ```bash
-npm run serve        # Servidor de desarrollo
-npm run build        # Build de producción
-npm run lint         # Linter
+npm run serve    # Servidor de desarrollo
+npm run build    # Build de producción
+npm run lint     # Linter
 ```
 
-### Prisma
+**Prisma**
+
 ```bash
-npx prisma migrate dev          # Crear y aplicar migración
-npx prisma migrate deploy       # Aplicar migraciones (producción)
-npx prisma generate            # Regenerar cliente Prisma
-npx prisma studio              # Interfaz visual de BD
+npx prisma migrate dev      # Crear y aplicar migración
+npx prisma migrate deploy   # Aplicar migraciones existentes
+npx prisma generate         # Regenerar el cliente
+npx prisma studio           # Interfaz visual de la base de datos
 ```
 
-## 🐛 Solución de Problemas
+## Solución de problemas
 
-### Error de conexión a la base de datos
-- Verifica que PostgreSQL esté corriendo
-- Comprueba la `DATABASE_URL` en `.env`
-- Si usas Supabase, verifica también `DIRECT_URL` y que ambas tengan `sslmode=require`
-- Asegúrate de que la base de datos existe
+**Error de conexión a la base de datos**
 
-### Error "JWT_SECRET not defined"
-- Añade `JWT_SECRET` a tu archivo `.env`
-- Reinicia el servidor backend
+- Comprueba que PostgreSQL está en ejecución.
+- Revisa `DATABASE_URL` en `.env` (y `DIRECT_URL` si usas pooler).
+- Asegúrate de que la base de datos existe.
 
-### Puerto 3000 o 8080 ya en uso
-- Cambia el puerto en `.env` (backend) o `vue.config.js` (frontend)
-- O detén el proceso que está usando el puerto
+**Error «JWT_SECRET not defined»**
 
-### Errores de TypeScript en el backend
-- Ejecuta `npx prisma generate` para regenerar el cliente
-- Reinicia VS Code para actualizar TypeScript
+- Añade `JWT_SECRET` al archivo `.env` y reinicia el backend.
 
-### Frontend no conecta con Backend
-- En local: backend en puerto 3000 y `VUE_APP_API_URL=http://localhost:3000` en `frontend/.env.development.local`
-- En producción: `VUE_APP_API_URL=https://api.timeit.es` y en el API `FRONTEND_URL` / `CORS_ORIGINS` con `https://timeit.es`
-- Guía: [CONFIGURACION_CORS_PRODUCCION.md](CONFIGURACION_CORS_PRODUCCION.md)
+**Puerto 3000 u 8080 ocupado**
 
-## 📄 Licencia
+- Cambia el puerto en `.env` (backend) o en la configuración del frontend, o detén el proceso que lo usa.
 
-Este proyecto fue desarrollado como Proyecto Final del ciclo formativo de Desarrollo de Aplicaciones Web.
+**Errores de TypeScript en el backend**
 
-## 👨‍💻 Autor
+- Ejecuta `npx prisma generate` y reinicia el editor.
 
-Desarrollado por [Tu Nombre]
+**El frontend no conecta con el backend**
 
-## 🤝 Contribuciones
+- Comprueba que el backend corre en el puerto 3000 y que `VUE_APP_API_URL=http://localhost:3000` está definido en `frontend/.env.development.local`.
 
-Las contribuciones son bienvenidas. Por favor:
+## Despliegue (referencia)
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+El proyecto no está desplegado públicamente. Los documentos [`docs/CONFIGURACION_PRODUCCION.md`](docs/CONFIGURACION_PRODUCCION.md) y [`docs/CONFIGURACION_CORS_PRODUCCION.md`](docs/CONFIGURACION_CORS_PRODUCCION.md) describen una configuración de despliegue de referencia (variables de entorno, CORS y migraciones con `npx prisma migrate deploy`); los dominios que aparezcan en ellos (por ejemplo `timeit.es`) son ejemplos, no servicios activos.
 
-## 📞 Soporte
+## Autor
 
-Si encuentras algún problema o tienes preguntas:
-- Abre un issue en GitHub
-- Contacta al autor
+Adrián Pérez Correro — [github.com/adri109](https://github.com/adri109) · [linkedin.com/in/adriperezdev](https://linkedin.com/in/adriperezdev)
 
----
+## Contexto académico
 
-**⭐ Si este proyecto te resulta útil, considera darle una estrella en GitHub!**
+Proyecto Final del ciclo formativo de Grado Superior en Desarrollo de Aplicaciones Web.

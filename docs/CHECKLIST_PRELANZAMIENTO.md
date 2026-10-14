@@ -1,5 +1,7 @@
 # Checklist de Pre-lanzamiento — TimeIt
 
+> **Documento de referencia.** Este proyecto es académico y no está desplegado públicamente. El dominio `timeit.es` y las URL que aparecen aquí son ejemplos de configuración, no servicios activos.
+
 **Web:** https://timeit.es  
 **API:** https://api.timeit.es  
 **Deploy:** automático desde GitHub → dos apps (API = raíz repo, Web = carpeta `frontend/`)
@@ -41,14 +43,6 @@ Dos apps en el panel, mismo repo `adri109/Horarios`:
 - [ ] Publish directory: `dist`
 - [ ] Dominio: `timeit.es`
 - [x] `frontend/.env.production` con `VUE_APP_API_URL=https://api.timeit.es`
-- [ ] **Redeploy pendiente** — producción sirve build antiguo (`/js/index.js` sin hash)
-
-**Estado actual:**
-
-| Componente | Estado |
-|------------|--------|
-| API funcional | OK (smoke E2E pasó) |
-| Web en producción | Build antiguo — falta push + redeploy |
 
 ## 4) Funcional mínimo post-deploy
 

@@ -12,7 +12,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 #### Cambiado
 - Dominio de producción: **https://timeit.es** y **https://api.timeit.es**.
 - `config/production-urls.cjs` como fuente de URLs.
-- [CONFIGURACION_PRODUCCION.md](CONFIGURACION_PRODUCCION.md): despliegue en servidor propio (sin Render/Vercel/Railway).
+- [CONFIGURACION_PRODUCCION.md](docs/CONFIGURACION_PRODUCCION.md): despliegue en servidor propio (sin Render/Vercel/Railway).
 - Eliminados `render.yaml`, `CONFIGURACION_RENDER.md` y `frontend/vercel.json`.
 
 ### En Desarrollo - 2026-01-17
